@@ -1,4 +1,5 @@
 import sys
+import traceback
 
 import discord
 from discord.ext import commands
@@ -26,12 +27,11 @@ class CommandErrorHandler(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        if hasattr(ctx.command, 'on_error'):
-            return
-
         error = getattr(error, 'original', error)
 
-        if isinstance(error, commands.MissingRequiredArgument):
+        if isinstance(error, commands.CommandNotFound):
+            return  # prevent log spam from typos, etc.
+        elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.reply("Missing Argument: " + str(error.param))
             return
         elif isinstance(error, commands.BadArgument):
@@ -41,7 +41,8 @@ class CommandErrorHandler(commands.Cog):
             await ctx.reply("This command can only be used in NSFW channels")
             return
 
-        print('Ignoring {} in command {}:'.format(type(error).__name__, ctx.command), file=sys.stderr)
+        print('Ignoring {} in command {}'.format(type(error).__name__, ctx.command), file=sys.stderr)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
 
 def setup(client):

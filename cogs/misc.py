@@ -18,12 +18,23 @@ def get_ids(argument: str):
         if not last_id - first_id + 1 == width * height:
             raise commands.BadArgument("Incorrect number of maps for size")
 
-        ids = list(range(first_id, last_id + 1))
+        ids = [(i, 0) for i in range(first_id, last_id + 1)]
         return [ids[i:i + width] for i in range(0, len(ids), width)]
-    elif re.match(r"(\d+(,|;|$))*", argument):
-        ids = [[int(i) for i in s.split(",")] for s in argument.split(";")]
+    elif re.match(r"(\d+(.1-3)?(,|;|$))*", argument):
+        ids = []
+        for line in argument.split(";"):
+            maps_line = []
+            for item in line.split(","):
+                try:
+                    map_id, rot = (int(i) for i in item.split("."))
+                except ValueError:
+                    map_id, rot = (int(item), 0)
+
+                maps_line.append((map_id, rot))
+            ids.append(maps_line)
+
         if not all(len(i) == len(ids[0]) for i in ids):
-            # not all columns are the same length
+            # not all lines are the same length
             raise commands.BadArgument("Map not rectangular")
 
         return ids
@@ -66,21 +77,24 @@ class MiscCommands(commands.Cog, name="Misc"):
         Stitches together maps from mapartwall, map_ids has to be one of the following formats:
         * 1234-1239 3x2 (generates 2x2 map with the ids 1234-1238)
         * 1234,1235,1236;1237,1238,1239 (generates the same map, useful when the maps are not in order)
+        * 1234,1234.1;1234.3,1234.2 (add dots after an id to rotate the map 1-3 times clockwise)
         """
         if len(map_ids) > 8 or len(map_ids[0]) > 8:
             raise commands.BadArgument("Maximum height / width is 8 maps")
         stitched_map = Image.new("RGBA", (len(map_ids[0])*128, len(map_ids)*128))
 
         for x, line in enumerate(map_ids):
-            for y, map_id in enumerate(line):
+            for y, (map_id, rot) in enumerate(line):
                 try:
                     img = Image.open(io.BytesIO(await self.fetch_map(ctx, map_id)))
                 except Exception as e:
                     raise e
 
                 if img.getextrema()[3][1] == 24:  # Map is completely transparent
-                    await ctx.send(f"Map {map_id} is empty.")
-                    return
+                    raise exceptions.TransparentMapError(map_id)
+
+                if rot:
+                    img = img.rotate(rot * -90)
 
                 stitched_map.paste(img, (y*128, x*128))
 
