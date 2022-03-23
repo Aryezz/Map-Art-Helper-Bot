@@ -32,6 +32,7 @@ def get_ids(argument: str):
 
 
 class MiscCommands(commands.Cog, name="Misc"):
+    """Miscellaneous commands"""
     def __init__(self, bot):
         self.bot = bot
         self.session = aiohttp.ClientSession()
@@ -143,14 +144,26 @@ class MiscCommands(commands.Cog, name="Misc"):
 
         await ctx.send(message)
 
+    @commands.command()
+    async def info(self, ctx):
+        """Info about the bot"""
+        description = (
+            "Map Art Helper bot made with :heart: by Aryezz#9352\n"
+            "Feel free to suggest ideas for improvements / new commands\n"
+            "Source Code: https://gitlab.com/Aryezz/map-art-helper-bot"
+        )
+        url = "https://cdn.discordapp.com/avatars/241663921390485506/a_21562dbefcd6abff27bff9e98a1e317f.gif?size=1024"
+        embed = discord.Embed(title="Map Art Helper", description=description)
+        embed.set_thumbnail(url=url)
+
+        await ctx.send(embed=embed)
+
     @commands.is_owner()
     @commands.command(hidden=True)
     async def reload(self, ctx):
-        """reloads all cogs"""
+        """Reloads all cogs"""
         await self.session.close()
-
         extensions = list(self.bot.extensions.keys())
-
         # The message count would be reset on every reload if we didn't keep track of it
         yqe_message_count = self.bot.get_cog("Memes").yqe_message_count
 
