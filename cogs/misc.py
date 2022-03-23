@@ -1,0 +1,166 @@
+import hashlib
+import re
+
+import aiohttp
+import io
+import random
+import discord
+from discord.ext import commands
+from PIL import Image
+
+from cogs import exceptions
+
+
+def get_ids(argument: str):
+    if match := re.match(r"(\d+)\s*-\s*(\d+)\s*(\d+)x(\d+)", argument):
+        first_id, last_id = int(match[1]), int(match[2])
+        width, height = int(match[3]), int(match[4])
+        if not last_id - first_id + 1 == width * height:
+            raise commands.BadArgument("Incorrect number of maps for size")
+
+        ids = list(range(first_id, last_id + 1))
+        return [ids[i:i + width] for i in range(0, len(ids), width)]
+    elif re.match(r"(\d+(,|;|$))*", argument):
+        ids = [[int(i) for i in s.split(",")] for s in argument.split(";")]
+        if not all(len(i) == len(ids[0]) for i in ids):
+            # not all columns are the same length
+            raise commands.BadArgument("Map not rectangular")
+
+        return ids
+    else:
+        raise commands.BadArgument("Invalid Format")
+
+
+class MiscCommands(commands.Cog, name="Misc"):
+    def __init__(self, bot):
+        self.bot = bot
+        self.session = aiohttp.ClientSession()
+
+    async def fetch_map(self, ctx, map_id: int):
+        blacklist = [  # blacklist for TOS maps to not get server banned
+            "89be42fca8ecce7d821bf36d82d9ffd00157d5b5a943dd379141607412e316b9",
+            "ae6d3a992c15ee9b4f004d9e52dde6ed65681a1c0830e35475ac39452b11377b",
+        ]
+
+        if not 0 < map_id < 32_767:
+            raise commands.BadArgument("Map ID must be between 0 and 32767")
+
+        # v parameter is used for caching, using random value to avoid getting outdated images
+        url = f"https://mapartwall.rebane2001.com/mapimg/map_{map_id!s}.png?v={random.randint(0, 999_999_999)}"
+        async with self.session.get(url, ssl=False) as resp:
+            if not resp.status == 200:
+                return
+
+            data = await resp.read()
+
+            if hashlib.sha256(data).hexdigest() in blacklist:
+                raise exceptions.BlacklistedMapError(map_id, ctx.author)
+
+            return data
+
+    @commands.is_nsfw()
+    @commands.command()
+    async def stitch(self, ctx, *, map_ids: get_ids):
+        """
+        Stitches together maps from mapartwall, map_ids has to be one of the following formats:
+        * 1234-1239 3x2 (generates 2x2 map with the ids 1234-1238)
+        * 1234,1235,1236;1237,1238,1239 (generates the same map, useful when the maps are not in order)
+        """
+        if len(map_ids) > 8 or len(map_ids[0]) > 8:
+            raise commands.BadArgument("Maximum height / width is 8 maps")
+        stitched_map = Image.new("RGBA", (len(map_ids[0])*128, len(map_ids)*128))
+
+        for x, line in enumerate(map_ids):
+            for y, map_id in enumerate(line):
+                try:
+                    img = Image.open(io.BytesIO(await self.fetch_map(ctx, map_id)))
+                except Exception as e:
+                    raise e
+
+                if img.getextrema()[3][1] == 24:  # Map is completely transparent
+                    await ctx.send(f"Map {map_id} is empty.")
+                    return
+
+                stitched_map.paste(img, (y*128, x*128))
+
+        img_bytes = io.BytesIO()
+        stitched_map.save(img_bytes, format="PNG")
+        img_bytes.seek(0)
+
+        file = discord.File(img_bytes, f"map_stitch.png")
+        await ctx.send(file=file)
+
+    @commands.is_nsfw()
+    @commands.command(aliases=["id"])
+    async def map(self, ctx, map_id: int, resize: bool = True):
+        """Sends a map from mapartwall"""
+        try:
+            img = Image.open(io.BytesIO(await self.fetch_map(ctx, map_id)))
+        except Exception as e:
+            raise e
+
+        if img.getextrema()[3][1] == 24:  # Map is completely transparent
+            raise exceptions.TransparentMapError(map_id)
+
+        if resize:
+            img = img.resize((768, 768), Image.NEAREST)
+
+        img_bytes = io.BytesIO()
+        img.save(img_bytes, format="PNG")
+        img_bytes.seek(0)
+
+        file = discord.File(img_bytes, f"map_{map_id!s}.png")
+
+        await ctx.send(file=file)
+
+    @map.error
+    @stitch.error
+    async def map_error(self, ctx, error):
+        error = getattr(error, 'original', error)
+
+        if isinstance(error, exceptions.TransparentMapError):
+            await ctx.reply(f"Map {error.map_id!s} is empty.")
+        elif isinstance(error, exceptions.BlacklistedMapError):
+            print(str(error))
+            return
+
+    @commands.command(aliases=["largest"])
+    async def biggest(self, ctx):
+        """The biggest Map Art on 2b"""
+        message = (
+            "**Biggest Maps ever built on 2b2t:**\n"
+            "27 x 16 (432 maps) [flat, two-colour] - no comment by popstonia: "
+            "https://discord.com/channels/349201680023289867/349277718954901514/910748616283545640\n"
+            "21 x 12 (252 maps) [staircased, full colour] - Angel's Mirror by KevinKC2014: "
+            "https://discord.com/channels/349201680023289867/349277718954901514/953371453447884851\n"
+            "8 x 8 (64 maps) [flat + terrain, full colour] - Sky Masons by The Spawn Masons: "
+            "https://discord.com/channels/349201680023289867/349277718954901514/916099357823103038\n"
+            "9 x 6 (54 maps) [flat, two-colour] - Abaddons Last Art by Phi, Albatros and Tae: "
+            "https://discord.com/channels/349201680023289867/349277718954901514/650500181573500928\n"
+            "8 x 4 (32 maps) [flat, full colour] - Gotta Catch Em' All by Harri: "
+            "https://discord.com/channels/349201680023289867/349277718954901514/616841031605944360"
+        )
+
+        await ctx.send(message)
+
+    @commands.is_owner()
+    @commands.command(hidden=True)
+    async def reload(self, ctx):
+        """reloads all cogs"""
+        await self.session.close()
+
+        extensions = list(self.bot.extensions.keys())
+
+        # The message count would be reset on every reload if we didn't keep track of it
+        yqe_message_count = self.bot.get_cog("Memes").yqe_message_count
+
+        for extension in extensions:
+            self.bot.reload_extension(extension)
+
+        self.bot.get_cog("Memes").yqe_message_count = yqe_message_count
+
+        await ctx.send("reloaded all cogs")
+
+
+def setup(client):
+    client.add_cog(MiscCommands(client))
