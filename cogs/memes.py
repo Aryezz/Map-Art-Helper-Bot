@@ -1,4 +1,6 @@
 import random
+import re
+
 from discord.ext import commands
 
 
@@ -21,6 +23,9 @@ class MemeCommands(commands.Cog, name="Memes"):
 
         if message.author.id == self.golden_user_id:
             await message.add_reaction("🇦🇿")
+
+        if re.match(r"\bfit(mc)?\b", message.content.lower()):
+            await (await self.bot.get_context(message)).invoke(self.bot.get_command("fit"))
 
     @commands.command(hidden=True)
     async def yqe(self, ctx):
