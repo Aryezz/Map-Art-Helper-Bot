@@ -33,14 +33,6 @@ class MemeCommands(commands.Cog, name="Memes"):
 
         await ctx.send(message)
 
-    #@commands.command(hidden=True)
-    #async def aryezz(self, ctx):
-    #    """Living Legend"""
-    #    adjectives = ["sexy", "cute", "hot", "godlike", "humble", "prismary's boyfriend"]
-    #    message = "aryezz is " + random.choice(adjectives)
-    #
-    #    await ctx.send(message)
-
     @commands.command(hidden=True)
     async def tyrone(self, ctx):
         """It is known"""
