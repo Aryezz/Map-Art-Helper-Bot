@@ -3,7 +3,6 @@ from discord.ext import commands
 
 class LinkCommands(commands.Cog, name="Links"):
     """Commands linking to external websites or past discussions"""
-
     def __init__(self, bot):
         self.bot = bot
 
