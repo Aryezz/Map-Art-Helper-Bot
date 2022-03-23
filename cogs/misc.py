@@ -77,7 +77,7 @@ class MiscCommands(commands.Cog, name="Misc"):
         Stitches together maps from mapartwall, map_ids has to be one of the following formats:
         * 1234-1239 3x2 (generates 2x2 map with the ids 1234-1238)
         * 1234,1235,1236;1237,1238,1239 (generates the same map, useful when the maps are not in order)
-        * 1234,1234.1;1234.3,1234.2 (add dots after an id to rotate the map 1-3 times clockwise)
+        * 1234,1234.1;1234.3,1234.2 (add periods after an id to rotate the map 1-3 times clockwise)
         """
         if len(map_ids) > 8 or len(map_ids[0]) > 8:
             raise commands.BadArgument("Maximum height / width is 8 maps")
