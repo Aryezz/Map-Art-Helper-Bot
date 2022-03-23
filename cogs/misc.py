@@ -83,24 +83,25 @@ class MiscCommands(commands.Cog, name="Misc"):
             raise commands.BadArgument("Maximum height / width is 8 maps")
         stitched_map = Image.new("RGBA", (len(map_ids[0])*128, len(map_ids)*128))
 
-        for x, line in enumerate(map_ids):
-            for y, (map_id, rot) in enumerate(line):
-                try:
-                    img = Image.open(io.BytesIO(await self.fetch_map(ctx, map_id)))
-                except Exception as e:
-                    raise e
+        async with ctx.typing():
+            for x, line in enumerate(map_ids):
+                for y, (map_id, rot) in enumerate(line):
+                    try:
+                        img = Image.open(io.BytesIO(await self.fetch_map(ctx, map_id)))
+                    except Exception as e:
+                        raise e
 
-                if img.getextrema()[3][1] == 24:  # Map is completely transparent
-                    raise exceptions.TransparentMapError(map_id)
+                    if img.getextrema()[3][1] == 24:  # Map is completely transparent
+                        raise exceptions.TransparentMapError(map_id)
 
-                if rot:
-                    img = img.rotate(rot * -90)
+                    if rot:
+                        img = img.rotate(rot * -90)
 
-                stitched_map.paste(img, (y*128, x*128))
+                    stitched_map.paste(img, (y*128, x*128))
 
-        img_bytes = io.BytesIO()
-        stitched_map.save(img_bytes, format="PNG")
-        img_bytes.seek(0)
+            img_bytes = io.BytesIO()
+            stitched_map.save(img_bytes, format="PNG")
+            img_bytes.seek(0)
 
         file = discord.File(img_bytes, f"map_stitch.png")
         await ctx.send(file=file)
