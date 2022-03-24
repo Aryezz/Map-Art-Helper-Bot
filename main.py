@@ -6,6 +6,7 @@ import config
 
 bot = commands.Bot(command_prefix=config.prefix, case_insensitive=True)
 
+
 @bot.event
 async def on_ready():
     bot.session = aiohttp.ClientSession()
