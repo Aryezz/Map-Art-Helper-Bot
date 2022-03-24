@@ -1,12 +1,14 @@
+import aiohttp
 from discord.ext import commands
+
 import config
 
 
 bot = commands.Bot(command_prefix=config.prefix, case_insensitive=True)
 
-
 @bot.event
 async def on_ready():
+    bot.session = aiohttp.ClientSession()
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     print('Guilds:')
     print("\n".join("* " + g.name for g in (await bot.fetch_guilds().flatten())))

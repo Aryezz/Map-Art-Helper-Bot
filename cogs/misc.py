@@ -12,8 +12,8 @@ from cogs import exceptions
 
 
 class MapHandler(commands.Converter):
-    def __init__(self, session, allow_multiple: bool = False, resize: bool = True):
-        self.session = session
+    def __init__(self, allow_multiple: bool = False, resize: bool = True):
+        self.session = None
         self.allow_multiple = allow_multiple
         self.resize = resize
         self.blacklist = [  # blacklist for TOS maps to not get server banned
@@ -98,6 +98,9 @@ class MapHandler(commands.Converter):
         return img_bytes
 
     async def convert(self, ctx, argument: str):
+        if self.session is None:
+            self.session = ctx.bot.session
+
         map_ids = self.parse_ids(argument)
 
         if len(map_ids) > 8 or len(map_ids[0]) > 8:
@@ -120,7 +123,7 @@ class MiscCommands(commands.Cog, name="Misc"):
 
     @commands.is_nsfw()
     @commands.command()
-    async def stitch(self, ctx, *, map_ids: MapHandler(aiohttp.ClientSession(), allow_multiple=True, resize=False)):
+    async def stitch(self, ctx, *, map_ids: MapHandler(allow_multiple=True, resize=False)):
         """
         Stitches together maps from mapartwall, map_ids has to be one of the following formats:
         * 1234-1239 3x2 (generates 2x2 map with the ids 1234-1238)
@@ -131,7 +134,7 @@ class MiscCommands(commands.Cog, name="Misc"):
 
     @commands.is_nsfw()
     @commands.command(aliases=["id"])
-    async def map(self, ctx, map_id: MapHandler(aiohttp.ClientSession())):
+    async def map(self, ctx, map_id: MapHandler):
         """Sends a map from mapartwall"""
         await ctx.send(file=map_id)
 
