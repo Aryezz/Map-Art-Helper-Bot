@@ -75,10 +75,13 @@ class MapHandler(commands.Converter):
 
     async def generate_map(self, map_ids):
         stitched_map = Image.new("RGBA", (len(map_ids[0])*128, len(map_ids)*128))
+        map_cache = dict()
 
         for x, line in enumerate(map_ids):
             for y, (map_id, rot) in enumerate(line):
-                img = Image.open(io.BytesIO(await self.fetch_map(map_id)))
+                if map_id not in map_cache.keys():
+                    map_cache[map_id] = await self.fetch_map(map_id)
+                img = Image.open(io.BytesIO(map_cache[map_id]))
 
                 if img.getextrema()[3][1] == 24:  # Map is completely transparent
                     raise exceptions.TransparentMapError(map_id)
