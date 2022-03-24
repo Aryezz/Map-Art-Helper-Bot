@@ -122,6 +122,7 @@ class MiscCommands(commands.Cog, name="Misc"):
     """Miscellaneous commands"""
     def __init__(self, bot):
         self.bot = bot
+        self.bot.help_command.cog = self
 
     @commands.is_nsfw()
     @commands.command()
