@@ -1,7 +1,6 @@
 import hashlib
 import re
 
-import aiohttp
 import io
 import random
 import discord
