@@ -20,17 +20,13 @@ def get_ids(argument: str):
 
         ids = [(i, 0) for i in range(first_id, last_id + 1)]
         return [ids[i:i + width] for i in range(0, len(ids), width)]
-    elif re.match(r"(\d+(.1-3)?(,|;|$))*", argument):
+    elif re.match(r"(\d+(\.1-3)?(,|;|$))*", argument):
         ids = []
         for line in argument.split(";"):
             maps_line = []
             for item in line.split(","):
-                try:
-                    map_id, rot = (int(i) for i in item.split("."))
-                except ValueError:
-                    map_id, rot = (int(item), 0)
-
-                maps_line.append((map_id, rot))
+                split = item.split(".")
+                maps_line.append((int(split[0]), int(split[1]) if len(split) == 2 else 0))
             ids.append(maps_line)
 
         if not all(len(i) == len(ids[0]) for i in ids):
