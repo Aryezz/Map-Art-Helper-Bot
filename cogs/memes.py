@@ -8,7 +8,7 @@ class MemeCommands(commands.Cog, name="Memes"):
     """Pretty self explanatory, is it not?"""
     def __init__(self, bot):
         self.bot = bot
-        self.yqe_message_count = 0
+        self.bot.yqe_message_count = 0
 
         self.yqe_user_id = 401027856316104706  # Yqe#5135
         self.golden_user_id = 394784819499761664  # Golden#9727
@@ -19,7 +19,7 @@ class MemeCommands(commands.Cog, name="Memes"):
             return
 
         if message.author.id == self.yqe_user_id:
-            self.yqe_message_count += 1
+            self.bot.yqe_message_count += 1
 
         if message.author.id == self.golden_user_id:
             await message.add_reaction("🇦🇿")
@@ -31,7 +31,7 @@ class MemeCommands(commands.Cog, name="Memes"):
     async def yqe(self, ctx):
         """Most active discord user"""
         message = (
-            f"Yqe has sent {self.yqe_message_count!s} message{'s' if self.yqe_message_count != 1 else ''} "
+            f"Yqe has sent {self.bot.yqe_message_count!s} message{'s' if self.bot.yqe_message_count != 1 else ''} "
             f"since the bot was last restarted\n"
             "Yqe sends a lot of messages."
         )
