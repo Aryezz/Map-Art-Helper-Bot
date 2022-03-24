@@ -11,119 +11,129 @@ from PIL import Image
 from cogs import exceptions
 
 
-def get_ids(argument: str):
-    if match := re.match(r"(\d+)\s*-\s*(\d+)\s*(\d+)x(\d+)", argument):
-        first_id, last_id = int(match[1]), int(match[2])
-        width, height = int(match[3]), int(match[4])
-        if not last_id - first_id + 1 == width * height:
-            raise commands.BadArgument("Incorrect number of maps for size")
+class MapHandler(commands.Converter):
+    def __init__(self, session, allow_multiple: bool = False, resize: bool = True):
+        self.session = session
+        self.allow_multiple = allow_multiple
+        self.resize = resize
+        self.blacklist = [  # blacklist for TOS maps to not get server banned
+            "89be42fca8ecce7d821bf36d82d9ffd00157d5b5a943dd379141607412e316b9",
+            "ae6d3a992c15ee9b4f004d9e52dde6ed65681a1c0830e35475ac39452b11377b",
+        ]
 
-        ids = [(i, 0) for i in range(first_id, last_id + 1)]
-        return [ids[i:i + width] for i in range(0, len(ids), width)]
-    elif re.match(r"(\d+(\.1-3)?(,|;|$))*", argument):
-        ids = []
-        for line in argument.split(";"):
-            maps_line = []
-            for item in line.split(","):
-                split = item.split(".")
-                maps_line.append((int(split[0]), int(split[1]) if len(split) == 2 else 0))
-            ids.append(maps_line)
+    def parse_ids(self, argument: str):
+        if re.match(r"^\d+$", argument):
+            map_id = int(argument)
+            if not 0 < map_id < 32_767:
+                raise commands.BadArgument("Map ID must be between 0 and 32767")
 
-        if not all(len(i) == len(ids[0]) for i in ids):
-            # not all lines are the same length
-            raise commands.BadArgument("Map not rectangular")
+            return [[(int(argument), 0)]]
+        elif match := re.match(r"^(\d+)\s*-\s*(\d+)\s*(\d+)x(\d+)$", argument) and self.allow_multiple:
+            first_id, last_id = int(match[1]), int(match[2])
+            width, height = int(match[3]), int(match[4])
+            if not last_id - first_id + 1 == width * height:
+                raise commands.BadArgument("Incorrect number of maps for size")
+            if not 0 < first_id < 32_767 or not 0 < last_id < 32_767:
+                raise commands.BadArgument("Map ID must be between 0 and 32767")
 
-        return ids
-    else:
-        raise commands.BadArgument("Invalid Format")
+            map_ids = [(i, 0) for i in range(first_id, last_id + 1)]
+            return [map_ids[i:i + width] for i in range(0, len(map_ids), width)]
+        elif re.match(r"^\d+(\.[1-3])?(\s*[,;]\s*\d+(\.[1-3])?)*$", argument) and self.allow_multiple:
+            map_ids = []
+            for line in argument.split(";"):
+                maps_line = []
+                for item in line.split(","):
+                    split = item.split(".")
+                    map_id, rot = int(split[0]), int(split[1]) if len(split) == 2 else 0
+                    if not 0 < map_id < 32_767:
+                        raise commands.BadArgument("Map ID must be between 0 and 32767")
+
+                    maps_line.append((map_id, rot))
+                map_ids.append(maps_line)
+
+            if not all(len(i) == len(map_ids[0]) for i in map_ids):
+                # not all lines are the same length
+                raise commands.BadArgument("Map not rectangular")
+
+            return map_ids
+        else:
+            raise commands.BadArgument("Invalid Format")
+
+    async def fetch_map(self, map_id: int):
+        # v parameter is used for caching, using random value to avoid getting outdated images
+        url = f"https://mapartwall.rebane2001.com/mapimg/map_{map_id!s}.png?v={random.randint(0, 999_999_999)}"
+        async with self.session.get(url, ssl=False) as resp:
+            if not resp.status == 200:
+                raise commands.CommandError("Mapartwall responded with response status code " + str(resp.status))
+
+            data = await resp.read()
+
+            if hashlib.sha256(data).hexdigest() in self.blacklist:
+                raise exceptions.BlacklistedMapError(map_id, None)
+
+            return data
+
+    async def generate_map(self, map_ids):
+        stitched_map = Image.new("RGBA", (len(map_ids[0])*128, len(map_ids)*128))
+
+        for x, line in enumerate(map_ids):
+            for y, (map_id, rot) in enumerate(line):
+                img = Image.open(io.BytesIO(await self.fetch_map(map_id)))
+
+                if img.getextrema()[3][1] == 24:  # Map is completely transparent
+                    raise exceptions.TransparentMapError(map_id)
+
+                if rot:
+                    img = img.rotate(rot * -90)
+
+                stitched_map.paste(img, (y * 128, x * 128))
+
+        if self.resize and not self.allow_multiple:  # don't bother supporting non-quadratic maps
+            stitched_map = stitched_map.resize((768, 768), Image.NEAREST)
+
+        img_bytes = io.BytesIO()
+        stitched_map.save(img_bytes, format="PNG")
+        img_bytes.seek(0)
+
+        return img_bytes
+
+    async def convert(self, ctx, argument: str):
+        map_ids = self.parse_ids(argument)
+
+        if len(map_ids) > 8 or len(map_ids[0]) > 8:
+            raise commands.BadArgument("Maximum height / width is 8 maps")
+
+        async with ctx.typing():
+            try:
+                map_bytes = await self.generate_map(map_ids)
+            except exceptions.BlacklistedMapError as e:
+                raise exceptions.BlacklistedMapError(e.map_id, ctx.author)
+
+        file = discord.File(map_bytes, f"map.png")
+        return file
 
 
 class MiscCommands(commands.Cog, name="Misc"):
     """Miscellaneous commands"""
     def __init__(self, bot):
         self.bot = bot
-        self.session = aiohttp.ClientSession()
-
-    async def fetch_map(self, ctx, map_id: int):
-        blacklist = [  # blacklist for TOS maps to not get server banned
-            "89be42fca8ecce7d821bf36d82d9ffd00157d5b5a943dd379141607412e316b9",
-            "ae6d3a992c15ee9b4f004d9e52dde6ed65681a1c0830e35475ac39452b11377b",
-        ]
-
-        if not 0 < map_id < 32_767:
-            raise commands.BadArgument("Map ID must be between 0 and 32767")
-
-        # v parameter is used for caching, using random value to avoid getting outdated images
-        url = f"https://mapartwall.rebane2001.com/mapimg/map_{map_id!s}.png?v={random.randint(0, 999_999_999)}"
-        async with self.session.get(url, ssl=False) as resp:
-            if not resp.status == 200:
-                return
-
-            data = await resp.read()
-
-            if hashlib.sha256(data).hexdigest() in blacklist:
-                raise exceptions.BlacklistedMapError(map_id, ctx.author)
-
-            return data
 
     @commands.is_nsfw()
     @commands.command()
-    async def stitch(self, ctx, *, map_ids: get_ids):
+    async def stitch(self, ctx, *, map_ids: MapHandler(aiohttp.ClientSession(), allow_multiple=True, resize=False)):
         """
         Stitches together maps from mapartwall, map_ids has to be one of the following formats:
         * 1234-1239 3x2 (generates 2x2 map with the ids 1234-1238)
         * 1234,1235,1236;1237,1238,1239 (generates the same map, useful when the maps are not in order)
         * 1234,1234.1;1234.3,1234.2 (add periods after an id to rotate the map 1-3 times clockwise)
         """
-        if len(map_ids) > 8 or len(map_ids[0]) > 8:
-            raise commands.BadArgument("Maximum height / width is 8 maps")
-        stitched_map = Image.new("RGBA", (len(map_ids[0])*128, len(map_ids)*128))
-
-        async with ctx.typing():
-            for x, line in enumerate(map_ids):
-                for y, (map_id, rot) in enumerate(line):
-                    try:
-                        img = Image.open(io.BytesIO(await self.fetch_map(ctx, map_id)))
-                    except Exception as e:
-                        raise e
-
-                    if img.getextrema()[3][1] == 24:  # Map is completely transparent
-                        raise exceptions.TransparentMapError(map_id)
-
-                    if rot:
-                        img = img.rotate(rot * -90)
-
-                    stitched_map.paste(img, (y*128, x*128))
-
-            img_bytes = io.BytesIO()
-            stitched_map.save(img_bytes, format="PNG")
-            img_bytes.seek(0)
-
-        file = discord.File(img_bytes, f"map_stitch.png")
-        await ctx.send(file=file)
+        await ctx.send(file=map_ids)
 
     @commands.is_nsfw()
     @commands.command(aliases=["id"])
-    async def map(self, ctx, map_id: int, resize: bool = True):
+    async def map(self, ctx, map_id: MapHandler(aiohttp.ClientSession())):
         """Sends a map from mapartwall"""
-        try:
-            img = Image.open(io.BytesIO(await self.fetch_map(ctx, map_id)))
-        except Exception as e:
-            raise e
-
-        if img.getextrema()[3][1] == 24:  # Map is completely transparent
-            raise exceptions.TransparentMapError(map_id)
-
-        if resize:
-            img = img.resize((768, 768), Image.NEAREST)
-
-        img_bytes = io.BytesIO()
-        img.save(img_bytes, format="PNG")
-        img_bytes.seek(0)
-
-        file = discord.File(img_bytes, f"map_{map_id!s}.png")
-
-        await ctx.send(file=file)
+        await ctx.send(file=map_id)
 
     @map.error
     @stitch.error
@@ -173,7 +183,6 @@ class MiscCommands(commands.Cog, name="Misc"):
     @commands.command(hidden=True)
     async def reload(self, ctx):
         """Reloads all cogs"""
-        await self.session.close()
         extensions = list(self.bot.extensions.keys())
         # The message count would be reset on every reload if we didn't keep track of it
         yqe_message_count = self.bot.get_cog("Memes").yqe_message_count
