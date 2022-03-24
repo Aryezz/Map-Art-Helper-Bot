@@ -189,14 +189,8 @@ class MiscCommands(commands.Cog, name="Misc"):
     @commands.command(hidden=True)
     async def reload(self, ctx):
         """Reloads all cogs"""
-        extensions = list(self.bot.extensions.keys())
-        # The message count would be reset on every reload if we didn't keep track of it
-        yqe_message_count = self.bot.get_cog("Memes").yqe_message_count
-
-        for extension in extensions:
+        for extension in list(self.bot.extensions.keys()):
             self.bot.reload_extension(extension)
-
-        self.bot.get_cog("Memes").yqe_message_count = yqe_message_count
 
         await ctx.send("reloaded all cogs")
 
