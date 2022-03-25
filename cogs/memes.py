@@ -8,7 +8,8 @@ class MemeCommands(commands.Cog, name="Memes"):
     """Pretty self explanatory, is it not?"""
     def __init__(self, bot):
         self.bot = bot
-        self.bot.yqe_message_count = 0
+        if not hasattr(self.bot, "yqe_message_count"):
+            self.bot.yqe_message_count = 0
 
         self.yqe_user_id = 401027856316104706  # Yqe#5135
         self.golden_user_id = 394784819499761664  # Golden#9727
