@@ -19,7 +19,7 @@ class HelpCommands(commands.Cog, name="Help"):
 
         await ctx.send(message)
 
-    @commands.command()
+    @commands.command(aliases=["artist"])
     async def role(self, ctx):
         """How to get the artist role on here"""
         message = (
