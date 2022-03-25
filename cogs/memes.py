@@ -12,6 +12,7 @@ class MemeCommands(commands.Cog, name="Memes"):
             self.bot.yqe_message_count = 0
 
         self.yqe_user_id = 401027856316104706  # Yqe#5135
+        self.yqe_user_id = 241663921390485506  # Yqe#5135
         self.golden_user_id = 394784819499761664  # Golden#9727
 
     @commands.Cog.listener()
