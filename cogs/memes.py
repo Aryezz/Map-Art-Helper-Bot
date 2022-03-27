@@ -16,6 +16,8 @@ class MemeCommands(commands.Cog, name="Memes"):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if message.author.bot:
+            return
         if message.content.startswith(self.bot.command_prefix):
             return
 
