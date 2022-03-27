@@ -163,6 +163,8 @@ class MiscCommands(commands.Cog, name="Misc"):
             "https://discord.com/channels/349201680023289867/349277718954901514/953371453447884851\n"
             "11 x 11 (121 maps) [flat, 98.7% carpet] - Mapopoly by T Gang: "
             "https://discord.com/channels/349201680023289867/349277718954901514/957248581339844668\n"
+            "8 x 8 (64 maps) [flat, full colour] - ponystonia by popstonia: "
+            "https://discord.com/channels/349201680023289867/349277718954901514/954851826770018364\n"
             "8 x 8 (64 maps) [flat + terrain, full colour] - Sky Masons by The Spawn Masons: "
             "https://discord.com/channels/349201680023289867/349277718954901514/916099357823103038\n"
             "9 x 6 (54 maps) [flat, two-colour] - Abaddons Last Art by Phi, Albatros and Tae: "
