@@ -27,7 +27,10 @@ class MemeCommands(commands.Cog, name="Memes"):
         if message.author.id == self.golden_user_id:
             await message.add_reaction("🇦🇿")
 
-        if re.match(r"\bfit(mc)?\b", message.content.lower()):
+        if (
+            re.match(r"\bfit(mc)?\b", message.content.lower()) and
+            message.channel.id not in self.bot.config.channel_blacklist
+        ):
             await (await self.bot.get_context(message)).invoke(self.bot.get_command("fit"))
 
     @commands.command(hidden=True)
