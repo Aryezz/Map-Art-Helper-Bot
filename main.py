@@ -32,7 +32,7 @@ async def ignore_dms(ctx):
 
 @bot.check
 async def delete_archive_commands(ctx):
-    return ctx.message.channel.id in config.channel_blacklist
+    return ctx.message.channel.id not in config.channel_blacklist
 
 
 bot.run(config.token)
