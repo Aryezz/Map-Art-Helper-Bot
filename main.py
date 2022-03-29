@@ -1,5 +1,3 @@
-import asyncio
-
 import aiohttp
 from discord.ext import commands
 
