@@ -18,6 +18,10 @@ class MapHandler(commands.Converter):
         self.blacklist = [  # blacklist for TOS maps to not get server banned
             "89be42fca8ecce7d821bf36d82d9ffd00157d5b5a943dd379141607412e316b9",
             "ae6d3a992c15ee9b4f004d9e52dde6ed65681a1c0830e35475ac39452b11377b",
+            "440dbb039ff6f2d57c0a540c84f0d07e32687c295388be76ec88fca990fc553e",
+            "780dcdcf480185c5823b5115c4acbdfb251b45cba5bc09dc533ea9640e75d1e2",
+            "9846db0d5cdd13deeea480d36e88bdc263e22dbea0458d90a84e599341a7f5cb",
+            "8f3289eec87009bdc6f191c9223b9e753bf6ce86cf5daa9927ae4f2221ae363a",
         ]
 
     def parse_ids(self, argument: str):
