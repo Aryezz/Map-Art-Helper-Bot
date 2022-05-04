@@ -27,7 +27,7 @@ class MapHandler(commands.Converter):
     def parse_ids(self, argument: str):
         if re.match(r"^\d+$", argument):
             map_id = int(argument)
-            if not 0 < map_id < 32_767:
+            if not 0 <= map_id < 32_767:
                 raise commands.BadArgument("Map ID must be between 0 and 32767")
 
             return [[(int(argument), 0)]]
@@ -36,7 +36,7 @@ class MapHandler(commands.Converter):
             width, height = int(match[3]), int(match[4])
             if not last_id - first_id + 1 == width * height:
                 raise commands.BadArgument("Incorrect number of maps for size")
-            if not 0 < first_id < 32_767 or not 0 < last_id < 32_767:
+            if not 0 <= first_id < 32_767 or not 0 <= last_id < 32_767:
                 raise commands.BadArgument("Map ID must be between 0 and 32767")
 
             map_ids = [(i, 0) for i in range(first_id, last_id + 1)]
@@ -48,7 +48,7 @@ class MapHandler(commands.Converter):
                 for item in line.split(","):
                     split = item.split(".")
                     map_id, rot = int(split[0]), int(split[1]) if len(split) == 2 else 0
-                    if not 0 < map_id < 32_767:
+                    if not 0 <= map_id < 32_767:
                         raise commands.BadArgument("Map ID must be between 0 and 32767")
 
                     maps_line.append((map_id, rot))
