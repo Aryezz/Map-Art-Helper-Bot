@@ -84,7 +84,7 @@ class MapHandler(commands.Converter):
             for y, (map_id, rot) in enumerate(line):
                 if map_id not in map_cache.keys():
                     map_cache[map_id] = await self.fetch_map(map_id)
-                img = Image.open(io.BytesIO(map_cache[map_id]))
+                img = Image.open(io.BytesIO(map_cache[map_id])).convert("RGBA")
 
                 if img.getextrema()[3][1] == 24:  # Map is completely transparent
                     raise exceptions.TransparentMapError(map_id)
