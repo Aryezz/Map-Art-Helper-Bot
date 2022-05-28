@@ -19,6 +19,21 @@ class HelpCommands(commands.Cog, name="Help"):
 
         await ctx.send(message)
 
+    @commands.command(aliases=["stair", "3d", "staircased", "shades"])
+    async def staircase(self, ctx):
+        """How staircased maps produce different shades of colours"""
+        message = (
+            "Every block has one of three shades depending on the height of the highest block directly on its north. "
+            "If the highest block directly on its north is lower, the light shade is displayed, if it's on the same "
+            "height the middle shade is displayed (this is the colour a block would have on a flat map) and if it's "
+            "higher the dark shade is displayed.\n"
+            "This is also the reason why nooblines exist, use !!noobline for more info.\n"
+            "The screenshot below shows the three shades of white a staircased map can produce.\n"
+            "https://cdn.discordapp.com/attachments/349439171196354561/980070154027282543/unknown.png"
+        )
+
+        await ctx.send(message)
+
     @commands.command(aliases=["artist"])
     async def role(self, ctx):
         """How to get the artist role on here"""
