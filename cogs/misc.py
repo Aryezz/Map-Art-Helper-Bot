@@ -31,7 +31,7 @@ class MapHandler(commands.Converter):
                 raise commands.BadArgument("Map ID must be between 0 and 32767")
 
             return [[(int(argument), 0)]]
-        elif (match := re.match(r"^(\d+)\s*-\s*(\d+)\s*(\d+)x(\d+)$", argument)) and self.allow_multiple:
+        elif (match := re.match(r"^(\d+)\s*-\s*(\d+)\s+(\d+)x(\d+)$", argument)) and self.allow_multiple:
             first_id, last_id = int(match[1]), int(match[2])
             width, height = int(match[3]), int(match[4])
             if not last_id - first_id + 1 == width * height:
