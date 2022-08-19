@@ -9,7 +9,6 @@ bot = commands.Bot(command_prefix=config.prefix, case_insensitive=True)
 
 @bot.event
 async def on_ready():
-    bot.session = aiohttp.ClientSession()
     bot.config = config
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     print('Guilds:')

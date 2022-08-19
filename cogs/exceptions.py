@@ -10,8 +10,8 @@ class BlacklistedMapError(Exception):
     def __init__(self, map_id: int, user: discord.Member, message=None):
         self.map_id = map_id
         self.user = user
-        self.message = message or f"Blacklisted map with id {self.map_id!s} was requested by user {self.user!s}"
-        super().__init__(self.message)
+        self.error_message = message or f"Blacklisted map with id {self.map_id!s} was requested by user {self.user!s}"
+        super().__init__(self.error_message)
 
 
 class TransparentMapError(Exception):
@@ -39,6 +39,9 @@ class CommandErrorHandler(commands.Cog):
             return
         elif isinstance(error, commands.NSFWChannelRequired):
             await ctx.reply("This command can only be used in NSFW channels")
+            return
+        elif isinstance(error, commands.BadUnionArgument):
+            await ctx.reply("Arguments could not be parsed, check format")
             return
 
         print('Ignoring {} in command {}'.format(type(error).__name__, ctx.command), file=sys.stderr)
