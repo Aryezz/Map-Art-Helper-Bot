@@ -93,6 +93,7 @@ async def generate_map(ctx, map_ids: typing.List[MapMetadata], upscale: bool = F
         "780dcdcf480185c5823b5115c4acbdfb251b45cba5bc09dc533ea9640e75d1e2",
         "9846db0d5cdd13deeea480d36e88bdc263e22dbea0458d90a84e599341a7f5cb",
         "8f3289eec87009bdc6f191c9223b9e753bf6ce86cf5daa9927ae4f2221ae363a",
+        "83e247b8454deaeffda10bb621af803853b2598ad633340e7233f20df0160d28",
     ]
 
     map_art_width = max(meta.position[0] for meta in map_ids) + 1
