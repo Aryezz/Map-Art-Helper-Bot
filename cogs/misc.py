@@ -46,7 +46,7 @@ class MultiMapRange(commands.Converter):
 
         map_ids = []
         for i, map_id in enumerate(range(first_id, last_id + 1)):
-            x, y = i % width, i // height
+            x, y = i % width, i // width
             map_ids.append(MapMetadata(id=map_id, position=(x, y)))
 
         return map_ids
