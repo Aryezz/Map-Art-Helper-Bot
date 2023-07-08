@@ -76,5 +76,5 @@ class LinkCommands(commands.Cog, name="Links"):
         await ctx.send(message)
 
 
-def setup(client):
-    client.add_cog(LinkCommands(client))
+async def setup(client):
+    await client.add_cog(LinkCommands(client))
