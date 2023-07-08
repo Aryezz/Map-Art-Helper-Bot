@@ -192,5 +192,5 @@ class HelpCommands(commands.Cog, name="Help"):
         await ctx.send(message)
 
 
-def setup(client):
-    client.add_cog(HelpCommands(client))
+async def setup(client):
+    await client.add_cog(HelpCommands(client))

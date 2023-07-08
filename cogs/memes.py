@@ -27,11 +27,11 @@ class MemeCommands(commands.Cog, name="Memes"):
         if message.author.id == self.golden_user_id:
             await message.add_reaction("🇦🇿")
 
-        if (
-            re.search(r"\bFit(MC)?\b", message.content, flags=re.IGNORECASE) and
-            message.channel.id not in self.bot.config.channel_blacklist
-        ):
-            await (await self.bot.get_context(message)).invoke(self.bot.get_command("fit"))
+        #if (
+        #    re.search(r"\bFit(MC)?\b", message.content, flags=re.IGNORECASE) and
+        #    message.channel.id not in self.bot.config.channel_blacklist
+        #):
+        #    await (await self.bot.get_context(message)).invoke(self.bot.get_command("fit"))
 
     @commands.command(hidden=True)
     async def yqe(self, ctx):
@@ -113,5 +113,5 @@ class MemeCommands(commands.Cog, name="Memes"):
         await ctx.send(message)
 
 
-def setup(client):
-    client.add_cog(MemeCommands(client))
+async def setup(client):
+    await client.add_cog(MemeCommands(client))

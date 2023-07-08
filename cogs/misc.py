@@ -143,14 +143,14 @@ class MiscCommands(commands.Cog, name="Misc"):
         * 1234,1235,1236;1237,1238,1239 (generates the same map, useful when the maps are not in order)
         * 1234,1234.1;1234.3,1234.2 (add periods after an id to rotate the map 1-3 times clockwise)
         """
-        with ctx.typing():
+        async with ctx.channel.typing():
             await ctx.send(file=await generate_map(ctx, map_ids))
 
     @commands.is_nsfw()
     @commands.command(aliases=["id"])
     async def map(self, ctx, map_id: SingleMapArt):
         """Sends a map from mapartwall"""
-        with ctx.typing():
+        async with ctx.channel.typing():
             await ctx.send(file=await generate_map(ctx, map_id, upscale=True))
 
     @map.error
@@ -213,5 +213,5 @@ class MiscCommands(commands.Cog, name="Misc"):
         await ctx.send("reloaded all cogs")
 
 
-def setup(client):
-    client.add_cog(MiscCommands(client))
+async def setup(client):
+    await client.add_cog(MiscCommands(client))
