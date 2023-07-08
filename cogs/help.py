@@ -191,6 +191,16 @@ class HelpCommands(commands.Cog, name="Help"):
 
         await ctx.send(message)
 
+    @commands.command()
+    async def bedrock(self, ctx):
+        """Map Art on Bedrock and Pocket edition"""
+        message = (
+            "The #mapart-guide channel in the Map Artists of 2b2e discord guild has full guide on how to create map "
+            "art on bedrock and pocket edition. https://discord.gg/Y3gpgGR9yD"
+        )
+
+        await ctx.send(message)
+
 
 async def setup(client):
     await client.add_cog(HelpCommands(client))
