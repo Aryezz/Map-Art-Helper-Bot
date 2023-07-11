@@ -2,7 +2,7 @@ import hashlib
 import re
 import io
 import random
-import typing
+from typing import *
 from dataclasses import dataclass
 
 import aiohttp
@@ -19,19 +19,26 @@ session = aiohttp.ClientSession()
 class MapMetadata:
     id: int
     rotation: int = 0
-    position: typing.Tuple[int, int] = (0, 0)
+    position: Tuple[int, int] = (0, 0)
 
 
-class SingleMapArt(commands.Converter):
-    async def convert(self, ctx, map_id: str):
+@dataclass
+class MapArtMaps:
+    maps: List[MapMetadata]
+
+
+class SingleMapArt(MapArtMaps):
+    @classmethod
+    async def convert(cls, ctx, map_id: str):
         if not map_id.isnumeric():
             raise commands.BadArgument("Map ID is not numeric")
 
-        return [MapMetadata(id=int(map_id))]
+        return cls(maps=[MapMetadata(id=int(map_id))])
 
 
-class MultiMapRange(commands.Converter):
-    async def convert(self, ctx, argument: str):
+class MultiMapRange(MapArtMaps):
+    @classmethod
+    async def convert(cls, ctx, argument: str):
         if not (match := re.match(r"^(\d+)\s*-\s*(\d+)\s+(\d+)x(\d+)$", argument)):
             raise commands.BadArgument("Invalid Format")
 
@@ -49,11 +56,12 @@ class MultiMapRange(commands.Converter):
             x, y = i % width, i // width
             map_ids.append(MapMetadata(id=map_id, position=(x, y)))
 
-        return map_ids
+        return cls(maps=map_ids)
 
 
-class MultiMapList(commands.Converter):
-    async def convert(self, ctx, argument: str):
+class MultiMapList(MapArtMaps):
+    @classmethod
+    async def convert(cls, ctx, argument: str):
         if not re.match(r"^\d+(\.[1-3])?(\s*[,;]\s*\d+(\.[1-3])?)*$", argument):
             raise commands.BadArgument("Invalid Format")
 
@@ -69,7 +77,7 @@ class MultiMapList(commands.Converter):
 
                 map_ids.append(MapMetadata(id=map_id, rotation=rot, position=(x, y)))
 
-        return map_ids
+        return cls(maps=map_ids)
 
 
 async def fetch_map(map_id: int) -> bytes:
@@ -85,7 +93,7 @@ async def fetch_map(map_id: int) -> bytes:
         return data
 
 
-async def generate_map(ctx, map_ids: typing.List[MapMetadata], upscale: bool = False) -> discord.File:
+async def generate_map(ctx, map_ids: MapArtMaps, upscale: bool = False) -> discord.File:
     blacklist = [  # blacklist for TOS maps to not get server banned
         "89be42fca8ecce7d821bf36d82d9ffd00157d5b5a943dd379141607412e316b9",
         "ae6d3a992c15ee9b4f004d9e52dde6ed65681a1c0830e35475ac39452b11377b",
@@ -96,12 +104,12 @@ async def generate_map(ctx, map_ids: typing.List[MapMetadata], upscale: bool = F
         "83e247b8454deaeffda10bb621af803853b2598ad633340e7233f20df0160d28",
     ]
 
-    map_art_width = max(meta.position[0] for meta in map_ids) + 1
-    map_art_height = max(meta.position[1] for meta in map_ids) + 1
+    map_art_width = max(meta.position[0] for meta in map_ids.maps) + 1
+    map_art_height = max(meta.position[1] for meta in map_ids.maps) + 1
     full_map = Image.new("RGBA", (map_art_width * 128, map_art_height * 128))
-    map_cache = dict()
+    map_cache: Dict[int, bytes] = {}
 
-    for map_art in map_ids:
+    for map_art in map_ids.maps:
         if map_art.id not in map_cache.keys():
             map_cache[map_art.id] = await fetch_map(map_art.id)
 
@@ -136,7 +144,7 @@ class MiscCommands(commands.Cog, name="Misc"):
 
     @commands.is_nsfw()
     @commands.command()
-    async def stitch(self, ctx, *, map_ids: typing.Union[SingleMapArt, MultiMapRange, MultiMapList]):
+    async def stitch(self, ctx, *, map_ids: Union[SingleMapArt, MultiMapRange, MultiMapList]):
         """
         Stitches together maps from mapartwall, map_ids has to be one of the following formats:
         * 1234-1239 3x2 (generates 2x2 map with the ids 1234-1238)
