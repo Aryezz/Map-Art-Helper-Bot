@@ -2,6 +2,7 @@ import hashlib
 import re
 import io
 import random
+import logging
 from typing import *
 from dataclasses import dataclass
 from datetime import datetime
@@ -15,6 +16,8 @@ import humanize
 from cogs import exceptions
 
 session = aiohttp.ClientSession()
+
+logger = logging.getLogger("discord.mapart.misc")
 
 
 @dataclass
@@ -170,8 +173,7 @@ class MiscCommands(commands.Cog, name="Misc"):
         if isinstance(error, exceptions.TransparentMapError):
             await ctx.reply(f"Map {error.map_id!s} is empty.")
         elif isinstance(error, exceptions.BlacklistedMapError):
-            print(str(error))
-            return
+            logger.error(error)
 
     @commands.command(aliases=["largest"])
     async def biggest(self, ctx):

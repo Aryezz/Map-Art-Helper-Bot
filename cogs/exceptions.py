@@ -1,8 +1,11 @@
 import sys
 import traceback
+import logging
 
 import discord
 from discord.ext import commands
+
+logger = logging.getLogger("discord.mapart.exceptions")
 
 
 class BlacklistedMapError(Exception):
@@ -26,7 +29,7 @@ class CommandErrorHandler(commands.Cog):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
+    async def on_command_error(self, ctx: commands.Context, error: Exception):
         error = getattr(error, 'original', error)
 
         if isinstance(error, commands.CommandNotFound):
@@ -44,8 +47,8 @@ class CommandErrorHandler(commands.Cog):
             await ctx.reply("Arguments could not be parsed, check format")
             return
 
-        print('Ignoring {} in command {}'.format(type(error).__name__, ctx.command), file=sys.stderr)
-        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+        logger.error('Ignoring {} from message `{}`'.format(type(error).__name__, ctx.message.content))
+        logger.error(error, exc_info=False, stack_info=True)
 
 
 async def setup(client):

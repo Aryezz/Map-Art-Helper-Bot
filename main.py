@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from discord import Intents
 from discord.ext import commands
@@ -9,21 +10,21 @@ intents = Intents.default()
 intents.message_content = True
 bot = commands.Bot(intents=intents, command_prefix=config.prefix, case_insensitive=True)
 
+logger = logging.getLogger("discord.mapart.init")
 
 @bot.event
 async def on_ready():
     bot.config = config
     bot.started = datetime.now()
-    print(f'Logged in as {bot.user} (ID: {bot.user.id})')
-    print('Guilds:')
-    print("\n".join(["* " + g.name async for g in bot.fetch_guilds()]))
+    logger.info(f'Logged in as {bot.user} (ID: {bot.user.id})')
+    logger.info('Guilds:')
+    logger.info("\n".join(["* " + g.name async for g in bot.fetch_guilds()]))
 
     cogs = ["cogs.memes", "cogs.help", "cogs.links", "cogs.misc", "cogs.exceptions"]
 
     for cog in cogs:
         await bot.load_extension(cog)
-
-    print('------')
+        logger.info(f"loaded cog {cog}")
 
 
 @bot.check
