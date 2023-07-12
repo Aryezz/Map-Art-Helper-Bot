@@ -39,7 +39,7 @@ class MemeCommands(commands.Cog, name="Memes"):
     async def yqe(self, ctx):
         """Most active discord user"""
         delta = self.bot.started - datetime.now()
-        delta_f = humanize.precisedelta(delta, minimum_unit="hours", suppress=["years", "months"], format="%0.0f")
+        delta_f = humanize.precisedelta(delta, minimum_unit="hours", suppress=["years", "months"], format="%d")
         message = (
             f"Yqe has sent {self.bot.yqe_message_count!s} message{'s' if self.bot.yqe_message_count != 1 else ''} "
             f"since the bot was last restarted {delta_f} ago.\n"
