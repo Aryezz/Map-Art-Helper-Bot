@@ -17,26 +17,26 @@ from cogs import exceptions
 session = aiohttp.ClientSession()
 
 
-async def fetch_map(map_id: int) -> bytes:
-    # v parameter is used for caching, using random value to avoid getting outdated images
-    url = f"https://mapartwall.rebane2001.com/mapimg/map_{map_id!s}.png?v={random.randint(0, 999_999_999)}"
-
-    async with session.get(url, ssl=False) as resp:
-        if not resp.status == 200:
-            raise commands.CommandError("Mapartwall responded with response status code " + str(resp.status))
-
-        data = await resp.read()
-
-        return data
-
-
 @dataclass
 class MapMetadata:
     id: int
     rotation: int = 0
     position: Tuple[int, int] = (0, 0)
 
+    async def fetch(self) -> bytes:
+        # v parameter is used for caching, using random value to avoid getting outdated images
+        url = f"https://mapartwall.rebane2001.com/mapimg/map_{self.id!s}.png?v={random.randint(0, 999_999_999)}"
 
+        async with session.get(url, ssl=False) as resp:
+            if not resp.status == 200:
+                raise commands.CommandError("Mapartwall responded with response status code " + str(resp.status))
+
+            data = await resp.read()
+
+            return data
+
+
+@dataclass
 class MapArt:
     BLACKLIST = [  # blacklist for maps that violate discord TOS
             "89be42fca8ecce7d821bf36d82d9ffd00157d5b5a943dd379141607412e316b9",
@@ -48,8 +48,7 @@ class MapArt:
             "83e247b8454deaeffda10bb621af803853b2598ad633340e7233f20df0160d28",
         ]
 
-    def __init__(self, maps: List[MapMetadata]):
-        self.maps = maps
+    maps: List[MapMetadata]
 
     async def generate_map(self, ctx, upscale: bool = False) -> discord.File:
         map_art_width = max(meta.position[0] for meta in self.maps) + 1
@@ -57,22 +56,23 @@ class MapArt:
         full_map = Image.new("RGBA", (map_art_width * 128, map_art_height * 128))
         map_cache: Dict[int, bytes] = {}
 
-        for map_art in self.maps:
-            if map_art.id not in map_cache.keys():
-                map_cache[map_art.id] = await fetch_map(map_art.id)
+        for map in self.maps:
+            if map.id not in map_cache.keys():
+                map_cache[map.id] = await map.fetch()
+            map_bytes = map_cache[map.id]
 
-            if hashlib.sha256(map_cache[map_art.id]).hexdigest() in self.BLACKLIST:
-                raise exceptions.BlacklistedMapError(map_art.id, ctx.author)
+            if hashlib.sha256(map_bytes).hexdigest() in self.BLACKLIST:
+                raise exceptions.BlacklistedMapError(map.id, ctx.author)
 
-            img = Image.open(io.BytesIO(map_cache[map_art.id])).convert("RGBA")
+            img = Image.open(io.BytesIO(map_bytes)).convert("RGBA")
 
             if img.getextrema()[3][1] < 255:  # Map is completely transparent
-                raise exceptions.TransparentMapError(map_art.id)
+                raise exceptions.TransparentMapError(map.id)
 
-            if map_art.rotation:
-                img = img.rotate(map_art.rotation * -90)
+            if map.rotation:
+                img = img.rotate(map.rotation * -90)
 
-            full_map.paste(img, (map_art.position[0] * 128, map_art.position[1] * 128))
+            full_map.paste(img, (map.position[0] * 128, map.position[1] * 128))
 
         if upscale:  # up-scaling maps for better viewing in the discord client
             full_map = full_map.resize((full_map.width * 4, full_map.height * 4), Image.NEAREST)
