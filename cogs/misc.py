@@ -217,7 +217,7 @@ class MiscCommands(commands.Cog, name="Misc"):
     async def reload(self, ctx):
         """Reloads all cogs"""
         for extension in list(self.bot.extensions.keys()):
-            self.bot.reload_extension(extension)
+            await self.bot.reload_extension(extension)
 
         await ctx.send("reloaded all cogs")
 
