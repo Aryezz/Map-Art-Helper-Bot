@@ -4,11 +4,13 @@ import io
 import random
 from typing import *
 from dataclasses import dataclass
+from datetime import datetime
 
 import aiohttp
 import discord
 from discord.ext import commands
 from PIL import Image
+import humanize
 
 from cogs import exceptions
 
@@ -219,6 +221,16 @@ class MiscCommands(commands.Cog, name="Misc"):
             self.bot.reload_extension(extension)
 
         await ctx.send("reloaded all cogs")
+
+    @commands.command()
+    async def uptime(self, ctx):
+        """Shows the bot uptime"""
+        delta = self.bot.started - datetime.now()
+        delta_f = humanize.precisedelta(delta, minimum_unit="hours", suppress=["years", "months"], format="%0.0f")
+        msg = f"Uptime: {delta_f}"
+
+        await ctx.send(msg)
+
 
 
 async def setup(client):
