@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from discord import Intents
 from discord.ext import commands
 
@@ -11,6 +13,7 @@ bot = commands.Bot(intents=intents, command_prefix=config.prefix, case_insensiti
 @bot.event
 async def on_ready():
     bot.config = config
+    bot.started = datetime.now()
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     print('Guilds:')
     print("\n".join(["* " + g.name async for g in bot.fetch_guilds()]))

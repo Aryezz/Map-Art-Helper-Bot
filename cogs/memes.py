@@ -1,7 +1,9 @@
 import random
 import re
+from datetime import datetime
 
 from discord.ext import commands
+import humanize
 
 
 class MemeCommands(commands.Cog, name="Memes"):
@@ -36,9 +38,11 @@ class MemeCommands(commands.Cog, name="Memes"):
     @commands.command(hidden=True)
     async def yqe(self, ctx):
         """Most active discord user"""
+        delta = self.bot.started - datetime.now()
+        delta_f = humanize.precisedelta(delta, minimum_unit="hours", suppress=["years", "months"], format="%0.0f")
         message = (
             f"Yqe has sent {self.bot.yqe_message_count!s} message{'s' if self.bot.yqe_message_count != 1 else ''} "
-            f"since the bot was last restarted\n"
+            f"since the bot was last restarted {delta_f} ago.\n"
             "Yqe sends a lot of messages."
         )
 
