@@ -5,6 +5,7 @@ class LinkCommands(commands.Cog, name="Links"):
     """Commands linking to external websites or past discussions"""
     def __init__(self, bot):
         self.bot = bot
+        self.rebane_user_mention = "<@80622917083205632>"
 
     @commands.command(aliases=["mif", "format"])
     async def wiki(self, ctx):
@@ -15,23 +16,25 @@ class LinkCommands(commands.Cog, name="Links"):
 
     @commands.command(aliases=["mac"])
     async def mapartcraft(self, ctx):
-        """Map Art Generator made by rebane2001#3716"""
+        """Map Art Generator made by @rebane"""
         message = (
             "https://rebane2001.com/mapartcraft/\n"
-            "made with :heart: by rebane2001#3716"
+            "made with :heart: by @rebane"
         )
 
-        await ctx.send(message)
+        msg = await ctx.send(message)
+        await msg.edit(content=message.replace("@rebane", self.rebane_user_mention))
 
     @commands.command(aliases=["maw", "wall"])
     async def mapartwall(self, ctx):
-        """Map Art Wall made by rebane2001#3716"""
+        """Map Art Wall made by @rebane"""
         message = (
             "https://rebane2001.com/mapartwall/\n"
-            "made with :heart: by rebane2001#3716"
+            "made with :heart: by @rebane"
         )
 
-        await ctx.send(message)
+        msg = await ctx.send(message)
+        await msg.edit(content=message.replace("@rebane", self.rebane_user_mention))
 
     @commands.command()
     async def bookart(self, ctx):
