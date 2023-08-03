@@ -192,7 +192,7 @@ class MiscCommands(commands.Cog, name="Misc"):
             "https://discord.com/channels/349201680023289867/349277718954901514/916099357823103038\n"
             "9 x 6 (54 maps) [flat, two-colour] - Abaddons Last Art by Phi, Albatros and Tae: "
             "https://discord.com/channels/349201680023289867/349277718954901514/650500181573500928\n"
-            "8 x 5 (40 maps) [flag, full colour] - Deathly Hallows by Aryezz, IronException, THCFree and Sanku: "
+            "8 x 5 (40 maps) [flat, full colour] - Deathly Hallows by Aryezz, IronException, THCFree and Sanku: "
             "https://discord.com/channels/349201680023289867/349277718954901514/859364782891991040\n"
             "8 x 4 (32 maps) [flat, full colour] - Gotta Catch Em' All by Harri: "
             "https://discord.com/channels/349201680023289867/349277718954901514/616841031605944360"
