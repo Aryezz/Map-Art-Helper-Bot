@@ -13,8 +13,8 @@ class MemeCommands(commands.Cog, name="Memes"):
         if not hasattr(self.bot, "yqe_message_count"):
             self.bot.yqe_message_count = 0
 
-        self.yqe_user_id = 401027856316104706  # @yqe
-        self.golden_user_id = 394784819499761664  # @goldeni
+        self.yqe_user_id = 401027856316104706  # Yqe#5135
+        self.golden_user_id = 394784819499761664  # Golden#9727
 
     @commands.Cog.listener()
     async def on_message(self, message):
