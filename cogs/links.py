@@ -9,7 +9,7 @@ class LinkCommands(commands.Cog, name="Links"):
     @commands.command(aliases=["mif", "format"])
     async def wiki(self, ctx):
         """Minecraft Map Item Format on the Minecraft Wiki"""
-        message = "https://minecraft.gamepedia.com/Map_item_format"
+        message = "https://minecraft.wiki/Map_item_format"
 
         await ctx.send(message)
 

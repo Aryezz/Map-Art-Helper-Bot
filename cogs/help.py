@@ -99,7 +99,7 @@ class HelpCommands(commands.Cog, name="Help"):
         """About maps in the nether"""
         message = (
             "Maps do not work in the nether, see the example screenshot:\n"
-            "https://static.wikia.nocookie.net/minecraft_gamepedia/images/c/c4/Nethermap.png"
+            "https://minecraft.wiki/images/Nethermap.png"
         )
 
         await ctx.send(message)
