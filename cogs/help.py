@@ -90,7 +90,10 @@ class HelpCommands(commands.Cog, name="Help"):
     @commands.command()
     async def void(self, ctx):
         """Void on maps"""
-        message = "Void has the same colour on a map as stone, it will not make the map transparent."
+        message = (
+            "Watch this video for information about using the void to create transparent maps: "
+            "https://youtu.be/UZ6pniCQMEQ"
+        )
 
         await ctx.send(message)
 
@@ -150,7 +153,7 @@ class HelpCommands(commands.Cog, name="Help"):
     async def seed(self, ctx):
         """2b2t's map seed(s)"""
         message = (
-            "**2b2t map seeds**\n"
+            "**2b2t map seeds [Only accurate up to 1.12.2 terrain]**\n"
             "overworld: -4172144997902289642\n"
             "nether/end: 1434823964849314312"
         )
