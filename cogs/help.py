@@ -164,8 +164,9 @@ class HelpCommands(commands.Cog, name="Help"):
     async def water(self, ctx):
         """Water on maps"""
         message = (
-            "Check out the info here:\n"
-            "https://discord.com/channels/349201680023289867/349201680023289869/934067758327537695"
+            "Water is not affected by the height of the block north of it (like other blocks are). "
+            "Instead the different shades can be produced using different water depths: "
+            "https://media.discordapp.net/attachments/349480851915931653/1167752798818009088/2023-10-28_02.11.07.png"
         )
 
         await ctx.send(message)
