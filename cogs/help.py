@@ -98,6 +98,36 @@ class HelpCommands(commands.Cog, name="Help"):
         await ctx.send(message)
 
     @commands.command()
+    async def baritone(self, ctx):
+        """Info on how to use baritone to build map art"""
+        message = (
+            "**Tutorial on how to build map art using Baritone** (by JeeJ_LEL and Radragon)\n"
+            "> To build map art with baritone, you have to load your schematic with litematica and then enter"
+            "`#litematica build` to start.\n"
+            "> Note that it is not 100% autonomous and can get stuck, so look after it. `#pause` and `#resume`"
+            "are your friends.\n"
+            "> It can't restock automatically from chests or shulkers, but it can move items in your inventory with"
+            "the right setting : `#allowinventory true` . Turn it off once you're done to avoid affecting regular"
+            "gameplay (the pickaxe stuck on slot 1).\n"
+            "> Baritone cannot deal with mobs. It's best to prevent mob spawning beforehand, but they can also be"
+            "dealt with kill aura with a knockback sword and thorns armor.\n"
+            "> The command `#buildIgnoreProperties powered,type` prevents baritone from getting stuck on pressure"
+            "plates, and from caring whether slabs are top or bottom.\n"
+            "> \n"
+            "> It works better if you first put a platform below to help it (eg for staircased). If your schematic"
+            "includes one, the setting `#buildskipblocks block1,block2,block3` (list all non-plartform materials)"
+            "allows you to build the platform before the rest.\n"
+            "> It struggles with non-full blocks such as carpets, especially on staircased maps where it can get stuck"
+            "whenever it needs to jump on a carpet. It is preferable to only use full blocks when building staircased"
+            "maps with baritone.\n"
+            "> The setting `#mapArtMode true` makes it only care about the top block in each column, which is useful"
+            "for staircased maps. On the contrary, the *buildInLayers* setting should be disabled.\n"
+            "Baritone: https://github.com/cabaletta/baritone"
+        )
+
+        await ctx.send(message)
+
+    @commands.command()
     async def nether(self, ctx):
         """About maps in the nether"""
         message = (

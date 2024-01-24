@@ -68,13 +68,6 @@ class LinkCommands(commands.Cog, name="Links"):
 
         await ctx.send(message)
 
-    @commands.command()
-    async def baritone(self, ctx):
-        """Link to the baritone github repo"""
-        message = "https://github.com/cabaletta/baritone"
-
-        await ctx.send(message)
-
 
 async def setup(client):
     await client.add_cog(LinkCommands(client))
