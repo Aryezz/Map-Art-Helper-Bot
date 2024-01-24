@@ -101,7 +101,7 @@ class HelpCommands(commands.Cog, name="Help"):
     async def baritone(self, ctx):
         """Info on how to use baritone to build map art"""
         message = (
-            "**Tutorial on how to build map art using Baritone** (by JeeJ_LEL and Radragon)\n"
+            "**Tutorial on how to build map art using Baritone** (by JeeJ_LEL and Radagon)\n"
             "> To build map art with baritone, you have to load your schematic with litematica and then enter "
             "`#litematica build` to start.\n"
             "> Note that it is not 100% autonomous and can get stuck, so look after it. `#pause` and `#resume` "
