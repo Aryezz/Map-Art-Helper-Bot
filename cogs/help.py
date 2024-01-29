@@ -122,7 +122,8 @@ class HelpCommands(commands.Cog, name="Help"):
             "maps with baritone.\n"
             "> The setting `#mapArtMode true` makes it only care about the top block in each column, which is useful "
             "for staircased maps. On the contrary, the *buildInLayers* setting should be disabled.\n"
-            "Baritone: https://github.com/cabaletta/baritone"
+            "Baritone: https://github.com/cabaletta/baritone\n"
+            "https://media.discordapp.net/attachments/565597105629036557/1201107698574438500/Capture_decran_2024-01-28_103628.png"
         )
 
         await ctx.send(message)
