@@ -2,6 +2,7 @@ import hashlib
 import re
 import io
 import random
+import math
 import logging
 from typing import *
 from dataclasses import dataclass
@@ -140,11 +141,79 @@ class MultiMapList(MapArt):
         return cls(map_ids)
 
 
+@dataclass
+class BigMapArt:
+    size: Tuple[int, int]
+    type: str
+    palette: str
+    name: str
+    artists: List[str]
+    message_id: int
+
+    @property
+    def total_maps(self):
+        return self.size[0] * self.size[1]
+
+    @property
+    def link(self):
+        return "https://discord.com/channels/349201680023289867/349277718954901514/" + str(self.message_id)
+
+    @property
+    def artists_str(self):
+        if len(self.artists) == 1:
+            return self.artists[0]
+
+        return ", ".join(self.artists[:-1]) + " and " + self.artists[-1]
+
+    @property
+    def line(self):
+        size_info = f"({self.size[0]} x {self.size[1]}, ({self.total_maps} maps)"
+        extra_info = f"[{self.type}, {self.palette}] - [**{self.name}**]({self.link}) by **{self.artists_str}**"
+
+        return size_info + " - " + extra_info
+
+
 class MiscCommands(commands.Cog, name="Misc"):
     """Miscellaneous commands"""
+
+    biggest_maps = [
+        BigMapArt((27, 16), "dual-layered", "two-colour", "no comment", ["popstonia"], 910748616283545640),
+        BigMapArt((21, 12), "staircased", "full colour", "Angel's Mirror", ["KevinKC2014"], 953371453447884851),
+        BigMapArt((11, 11), "flat", "98.7% carpet", "Mapopoly", ["T Gang"], 957248581339844668),
+        BigMapArt((8, 8), "dual-layered", "carpet only", "ponystonia", ["popstonia"], 954851826770018364),
+        BigMapArt((8, 8), "flat + terrain", "full colour", "Sky Masons", ["The Spawn Masons"], 916099357823103038),
+        BigMapArt((9, 6), "flat", "two-colour", "Abaddons Last Art", ["Phi", "Albatros", "Tae"], 650500181573500928),
+        BigMapArt((7, 7), "flat", "carpet only", "Fox Portrait", ["FoxMe"], 1161077180445499464),
+        BigMapArt((8, 5), "flat", "full colour", "Deathly Hallows", ["Aryezz", "IronException", "THCFree", "Sanku"],
+                  859364782891991040),
+        BigMapArt((8, 4), "flat", "full colour", "Gotta Catch Em' All", ["Harri"], 616841031605944360),
+        BigMapArt((11, 16), "flat", "carpet only", "The Diary", ["CirocDrip"], 1203487381878079548),
+        BigMapArt((15, 10), "flat", "carpet only", "sick fearless bastard", ["nyxis", "GAN G SEA LANTERN"],
+                  1203487345177788446),
+        BigMapArt((9, 9), "flat", "carpet only", "DIMATOWN", ["GAN G SEA LANTERN", "DIMA"], 1203487165615579207),
+        BigMapArt((10, 8), "flat", "carpet only", "Hausemaster should just delete the entire world of 2b2t",
+                  ["GAN G SEA LANTERN"], 1203486991799549973),
+        BigMapArt((15, 10), "flat", "carpet only", "yodieland", ["GAN G SEA LANTERN"], 1203486952855306330),
+        BigMapArt((5, 8), "flat", "carpet only", "belle delphine", ["GAN G SEA LANTERN"], 1203486395583430758),
+        BigMapArt((8, 4), "flat", "carpet only", "KING KRUST", ["GAN G SEA LANTERN"], 1203486365711466618),
+        BigMapArt((6, 8), "flat", "carpet only", "Godfrey, First Elden Lord", ["GAN G SEA LANTERN"],
+                  1203486235100708864),
+        BigMapArt((8, 8), "flat", "carpet only", "scrunch", ["GAN G SEA LANTERN"], 1203486157409755236),
+        BigMapArt((6, 6), "flat", "carpet only", "Starscourge Radahn", ["GAN G SEA LANTERN"], 1203486002094673970),
+        BigMapArt((8, 4), "flat", "carpet only", "GT-Four", ["GAN G SEA LANTERN"], 1203485858896945242),
+        BigMapArt((7, 7), "flat", "carpet only", "big luni", ["GAN G SEA LANTERN"], 1203485846972530738),
+        BigMapArt((6, 8), "flat", "carpet only", "joycongodz 999", ["GAN G SEA LANTERN"], 1203485833827459142),
+        BigMapArt((9, 5), "flat", "carpet only", "2b2t_Uncensored Mod Team", ["GAN G SEA LANTERN"],
+                  1203485398043459615),
+        BigMapArt((6, 6), "flat", "carpet only", "small luni", ["GAN G SEA LANTERN"], 1203485357887332382),
+
+    ]
+
     def __init__(self, bot):
         self.bot = bot
         self.bot.help_command.cog = self
+
+        self.biggest_maps = sorted(self.biggest_maps, key=lambda x: x.total_maps, reverse=True)
 
     @commands.is_nsfw()
     @commands.command()
@@ -176,29 +245,31 @@ class MiscCommands(commands.Cog, name="Misc"):
             logger.error(error)
 
     @commands.command(aliases=["largest"])
-    async def biggest(self, ctx):
-        """The biggest Map Art on 2b"""
+    async def biggest(self, ctx, page: int = 1):
+        """The biggest map art on 2b2t
+
+        Parameters
+        ----------
+        page : int, optional
+            The page number
+        """
+        max_page = math.ceil(len(self.biggest_maps) / 10)
+
+        if 0 >= page or page > max_page:
+            await ctx.reply(f"Page {page} is invalid.")
+            return
+
+        maps = self.biggest_maps[(page - 1) * 10:page * 10]
+        ranks = {1: "🥇", 2: "🥈", 3: "🥉"}
+
         message = (
-            "**Biggest Maps ever built on 2b2t:**\n"
-            "27 x 16 (432 maps) [dual-layered, two-colour] - no comment by popstonia: "
-            "https://discord.com/channels/349201680023289867/349277718954901514/910748616283545640\n"
-            "21 x 12 (252 maps) [staircased, full colour] - Angel's Mirror by KevinKC2014: "
-            "https://discord.com/channels/349201680023289867/349277718954901514/953371453447884851\n"
-            "11 x 11 (121 maps) [flat, 98.7% carpet] - Mapopoly by T Gang: "
-            "https://discord.com/channels/349201680023289867/349277718954901514/957248581339844668\n"
-            "8 x 8 (64 maps) [dual-layered, carpet only] - ponystonia by popstonia: "
-            "https://discord.com/channels/349201680023289867/349277718954901514/954851826770018364\n"
-            "8 x 8 (64 maps) [flat + terrain, full colour] - Sky Masons by The Spawn Masons: "
-            "https://discord.com/channels/349201680023289867/349277718954901514/916099357823103038\n"
-            "9 x 6 (54 maps) [flat, two-colour] - Abaddons Last Art by Phi, Albatros and Tae: "
-            "https://discord.com/channels/349201680023289867/349277718954901514/650500181573500928\n"
-            "7 x 7 (49 maps) [flat, carpet only] - Fox Portrait by FoxMe: "
-            "https://discord.com/channels/349201680023289867/349277718954901514/1161077180445499464\n"
-            "8 x 5 (40 maps) [flat, full colour] - Deathly Hallows by Aryezz, IronException, THCFree and Sanku: "
-            "https://discord.com/channels/349201680023289867/349277718954901514/859364782891991040\n"
-            "8 x 4 (32 maps) [flat, full colour] - Gotta Catch Em' All by Harri: "
-            "https://discord.com/channels/349201680023289867/349277718954901514/616841031605944360"
+            f"**Biggest map-art ever built on 2b2t:** (Page {page}/{max_page})\n"
+            "Use `!!biggest <n>` to see page n\n\n"
         )
+
+        for (i, bigmap) in enumerate(maps):
+            rank = i + 1 + (page - 1) * 10
+            message += f"**{ranks.get(rank, f'{rank}:')}** {bigmap.line}\n"
 
         await ctx.send(message)
 
