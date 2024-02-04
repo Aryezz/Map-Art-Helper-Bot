@@ -300,7 +300,7 @@ class MiscCommands(commands.Cog, name="Misc"):
     async def uptime(self, ctx):
         """Shows the bot uptime"""
         delta = self.bot.started - datetime.now()
-        delta_f = humanize.precisedelta(delta, minimum_unit="hours", suppress=["years", "months"], format="%d")
+        delta_f = humanize.precisedelta(delta, minimum_unit="seconds", suppress=["years", "months"], format="%d")
         msg = f"Uptime: {delta_f}"
 
         await ctx.send(msg)
