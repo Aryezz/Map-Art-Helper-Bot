@@ -206,7 +206,8 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((9, 5), "flat", "carpet only", "2b2t_Uncensored Mod Team", ["GAN G SEA LANTERN"],
                   1203485398043459615),
         BigMapArt((6, 6), "flat", "carpet only", "small luni", ["GAN G SEA LANTERN"], 1203485357887332382),
-
+        BigMapArt((20, 20), "flat", "carpet only", "Hubble Ultra Deep Field (2004)", ["DuctTapeMessiah"],
+                  1205328109579145296),
     ]
 
     def __init__(self, bot):
