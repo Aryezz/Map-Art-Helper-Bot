@@ -167,7 +167,7 @@ class BigMapArt:
 
     @property
     def line(self):
-        size_info = f"({self.size[0]} x {self.size[1]}, ({self.total_maps} maps)"
+        size_info = f"{self.size[0]} x {self.size[1]}, ({self.total_maps} maps)"
         extra_info = f"[{self.type}, {self.palette}] - [**{self.name}**]({self.link}) by **{self.artists_str}**"
 
         return size_info + " - " + extra_info
@@ -264,13 +264,14 @@ class MiscCommands(commands.Cog, name="Misc"):
         ranks = {1: "🥇", 2: "🥈", 3: "🥉"}
 
         message = (
-            f"**Biggest map-art ever built on 2b2t:** (Page {page}/{max_page})\n"
-            "Use `!!biggest <n>` to see page n\n\n"
+            "# Biggest map-art ever built on 2b2t:\n"
         )
 
         for (i, bigmap) in enumerate(maps):
             rank = i + 1 + (page - 1) * 10
             message += f"**{ranks.get(rank, f'{rank}:')}** {bigmap.line}\n"
+
+        message += f"\n_Page {page}/{max_page} - use `!!biggest <n>` to see page n_"
 
         await ctx.send(message)
 
