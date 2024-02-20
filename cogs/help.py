@@ -130,6 +130,19 @@ class HelpCommands(commands.Cog, name="Help"):
 
         await ctx.send(message)
 
+    @commands.command(aliases=["act"])
+    async def photoshop(self, ctx):
+        """Info about dithering in photoshop"""
+        message = (
+            "# Dithering in Photoshop\n"
+            "Follow the tutorial in this video: https://youtu.be/8VRuDEfFa2Y\n"
+            "Instead of the NES colour palette, choose one of the following ACT colour profiles:\n"
+            "* staircase palette: https://cdn.discordapp.com/attachments/565597105629036557/1209546913259589752/staircase_new.ACT?ex=65e75158&is=65d4dc58&hm=65f55ac19ecb76045cc3a94215a3a71f7a17b31477eb127e8c368f9d439e5678\n"
+            "* flat palette: https://cdn.discordapp.com/attachments/565597105629036557/1209546913771421746/flat_new.ACT?ex=65e75158&is=65d4dc58&hm=3c03f21ccd0a0f09b7906472e9e5cc11e2b8ebb99a3f41f2911d8b6e538a3341"
+        )
+
+        await ctx.send(message)
+
     @commands.command()
     async def nether(self, ctx):
         """About maps in the nether"""
