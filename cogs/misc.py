@@ -209,7 +209,7 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((20, 20), "flat", "carpet only", "Hubble Ultra Deep Field (2004)", ["DuctTapeMessiah"],
                   1205328109579145296),
         BigMapArt((8, 4), "flat", "carpet only", "2.2", ["CrowTheBest", "WrityGD", "M1vae", "AdidasManS"],
-                  1205328109579145296),
+                  1197302445689274428),
     ]
 
     def __init__(self, bot):
