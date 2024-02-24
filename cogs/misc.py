@@ -208,13 +208,18 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((6, 6), "flat", "carpet only", "small luni", ["GAN G SEA LANTERN"], 1203485357887332382),
         BigMapArt((20, 20), "flat", "carpet only", "Hubble Ultra Deep Field (2004)", ["DuctTapeMessiah"],
                   1205328109579145296),
+        BigMapArt((8, 4), "flat", "carpet only", "2.2", ["CrowTheBest", "WrityGD", "M1vae", "AdidasManS"],
+                  1205328109579145296),
     ]
 
     def __init__(self, bot):
         self.bot = bot
         self.bot.help_command.cog = self
 
-        self.biggest_maps = sorted(self.biggest_maps, key=lambda x: x.total_maps, reverse=True)
+        # we sort by total maps (descending) and message id (-> message age - ascending)
+        # because the ordering is opposite for the two, we invert the message id, so when reversed we get the ascending
+        # order that we want. There is probably a more pythonic way to do this, but whatever.
+        self.biggest_maps = sorted(self.biggest_maps, key=lambda x: (x.total_maps, x.message_id * -1), reverse=True)
 
     @commands.is_nsfw()
     @commands.command()
