@@ -210,6 +210,8 @@ class MiscCommands(commands.Cog, name="Misc"):
                   1205328109579145296),
         BigMapArt((8, 4), "flat", "carpet only", "2.2", ["CrowTheBest", "WrityGD", "M1vae", "AdidasManS"],
                   1197302445689274428),
+        BigMapArt((9, 9), "flat", "carpet only", "He is the One - The Matrix", ["DuctTapeMessiah"],
+                  1216129369525846118),
     ]
 
     def __init__(self, bot):
