@@ -208,8 +208,7 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((6, 6), "flat", "carpet only", "small luni", ["GAN G SEA LANTERN"], 1203485357887332382),
         BigMapArt((20, 20), "flat", "carpet only", "Hubble Ultra Deep Field (2004)", ["DuctTapeMessiah"],
                   1205328109579145296),
-        BigMapArt((8, 4), "flat", "carpet only", "2.2", ["CrowTheBest", "WrityGD", "M1vae", "AdidasManS"],
-                  1197302445689274428),
+        BigMapArt((8, 4), "flat", "carpet only", "2.2", ["CrowTheBest", "WrityGD", "M1vae"], 1197302445689274428),
         BigMapArt((9, 9), "flat", "carpet only", "He is the One - The Matrix", ["DuctTapeMessiah"],
                   1216129369525846118),
     ]
