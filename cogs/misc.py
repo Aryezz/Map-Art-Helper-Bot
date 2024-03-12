@@ -252,26 +252,41 @@ class MiscCommands(commands.Cog, name="Misc"):
             logger.error(error)
 
     @commands.command(aliases=["largest"])
-    async def biggest(self, ctx, page: int = 1):
+    async def biggest(self, ctx, page: Optional[int] = 1, *filters):
         """The biggest map art on 2b2t
 
         Parameters
         ----------
         page : int, optional
             The page number
+        filters : list, optional
+            Filters to apply to the list of maps.
+            To filter out flat maps, use `-f`,
+            to filter out carpet-only maps, use `-c` or `-co`
         """
-        max_page = math.ceil(len(self.biggest_maps) / 10)
+
+        maps_to_consider: List[BigMapArt] = self.biggest_maps
+
+        filter_flat_options: List[str] = ["-f", "-flat"]
+        if any(f in filters for f in filter_flat_options):
+            flat_types: List[str] = ["flat", "dual-layered", "flat + terrain"]
+            maps_to_consider = list(filter(lambda x: x.type not in flat_types, maps_to_consider))
+
+        filter_carpet_only_options: List[str] = ["-c", "-co", "-carpet", "-carpetonly", "-carpet-only"]
+        if any(f in filters for f in filter_carpet_only_options):
+            carpet_only_types: List[str] = ["carpet only", "two-colour", "98.7% carpet"]
+            maps_to_consider = list(filter(lambda x: x.palette not in carpet_only_types, maps_to_consider))
+
+        max_page = math.ceil(len(maps_to_consider) / 10)
 
         if 0 >= page or page > max_page:
             await ctx.reply(f"Page {page} is invalid.")
             return
 
-        maps = self.biggest_maps[(page - 1) * 10:page * 10]
+        maps = maps_to_consider[(page - 1) * 10:page * 10]
         ranks = {1: "🥇", 2: "🥈", 3: "🥉"}
 
-        message = (
-            "# Biggest map-art ever built on 2b2t:\n"
-        )
+        message = "# Biggest map-art ever built on 2b2t:\n"
 
         for (i, bigmap) in enumerate(maps):
             rank = i + 1 + (page - 1) * 10
