@@ -3,12 +3,18 @@ import logging
 
 from discord import Intents
 from discord.ext import commands
+from discord.ext.commands import DefaultHelpCommand
 
 import config
 
 intents = Intents.default()
 intents.message_content = True
-bot = commands.Bot(intents=intents, command_prefix=config.prefix, case_insensitive=True)
+bot = commands.Bot(
+    intents=intents,
+    command_prefix=config.prefix,
+    case_insensitive=True,
+    help_command=DefaultHelpCommand(width=250)
+)
 
 logger = logging.getLogger("discord.mapart.init")
 
