@@ -211,6 +211,19 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((8, 4), "flat", "carpet only", "2.2", ["CrowTheBest", "WrityGD", "M1vae"], 1197302445689274428),
         BigMapArt((9, 9), "flat", "carpet only", "He is the One - The Matrix", ["DuctTapeMessiah"],
                   1216129369525846118),
+        BigMapArt((9, 9), "flat", "carpet only", "party luna (crunchy cat)", ["GAN G SEA LANTERN"],
+                  1220512516137025636),
+        BigMapArt((9, 5), "flat", "carpet only", "Castle in the Sky", ["GAN G SEA LANTERN"], 1220512849277747270),
+        BigMapArt((10, 10), "flat", "carpet only", "MOGWARTS", ["GAN G SEA LANTERN"], 1220512934753603624),
+        BigMapArt((11, 10), "flat", "carpet only", "sung jinwoo", ["GAN G SEA LANTERN"], 1220513150613590026),
+        BigMapArt((6, 10), "flat", "carpet only", "Porsche", ["GAN G SEA LANTERN"], 1220513270163701760),
+        BigMapArt((14, 8), "flat", "carpet only", "2b - nier automata", ["GAN G SEA LANTERN"], 1220513282184708107),
+        BigMapArt((9, 6), "flat", "carpet only", "oyasumi punpun", ["GAN G SEA LANTERN"], 1220513486778404924),
+        BigMapArt((6, 6), "flat", "carpet only", "Malenia", ["GAN G SEA LANTERN"], 1220513568299155556),
+        BigMapArt((16, 9), "flat", "carpet only", "vagabound", ["GAN G SEA LANTERN"], 1220513651476267058),
+        BigMapArt((10, 14), "flat", "carpet only", "one punch man", ["GAN G SEA LANTERN"], 1220513849925570602),
+        BigMapArt((56, 31), "flat", "carpet only", "The Chronicles of Narnia", ["GAN G SEA LANTERN"],
+                  1220514239794380920),
     ]
 
     def __init__(self, bot):
