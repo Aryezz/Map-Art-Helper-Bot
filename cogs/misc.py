@@ -213,6 +213,7 @@ class MiscCommands(commands.Cog, name="Misc"):
                   1216129369525846118),
         BigMapArt((9, 9), "flat", "carpet only", "party luna (crunchy cat)", ["GAN G SEA LANTERN"],
                   1220512516137025636),
+        BigMapArt((6, 6), "flat", "carpet only", "penis_fucking @p_f", ["GAN G SEA LANTERN"], 1220511596951109652),
         BigMapArt((9, 5), "flat", "carpet only", "Castle in the Sky", ["GAN G SEA LANTERN"], 1220512849277747270),
         BigMapArt((10, 10), "flat", "carpet only", "MOGWARTS", ["GAN G SEA LANTERN"], 1220512934753603624),
         BigMapArt((11, 10), "flat", "carpet only", "sung jinwoo", ["GAN G SEA LANTERN"], 1220513150613590026),
