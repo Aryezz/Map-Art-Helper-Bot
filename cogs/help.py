@@ -71,18 +71,21 @@ class HelpCommands(commands.Cog, name="Help"):
     async def mapreset(self, ctx):
         """Explanation of map resets"""
         message = (
-            "Since map IDs in Minecraft are stored as signed shorts (16 bits) maps can be overwritten by causing an "
-            "integer overflow. To do this someone just has to spam enough maps (filling out the 32.768 actual IDs and "
-            "the 32.767 negative IDs - which will all be blank - to arrive back at map number 0. From there on every "
-            "new map will overwrite an old one with the same ID)\n\n"
+            "Up until Minecraft 1.13 map IDs were stored as signed shorts (16 bits). This meant that the map ID "
+            "counter would overflow when after reaching 32'767 and reset to -32'768. If all of the negative map IDs "
+            "were again used up and the map ID counter got back to zero, new maps would start overwriting existing"
+            "IDs.\n"
             "Maps were first disabled by \"The 4th Reich\" after the 11/11 dupe (they filled out all map IDs which "
-            "meant any newly created map would have a negative ID and be blank, a reupload of the video can be found here: "
-            "<https://youtu.be/znN9w2-Ojeo>). Later Kinorana would complete the reset by filling out all negative IDs and "
-            "overwriting all existing maps with his own (a map of Idolm@sters Chihaya): "
+            "meant any newly created map would have a negative ID and be blank. A reupload of the video can be found "
+            "here: <https://youtu.be/znN9w2-Ojeo>). Later Kinorana would complete the reset by filling out all "
+            "negative IDs and overwriting all existing maps with his one of their own (a map of Idolm@sters Chihaya): "
             "<https://twitter.com/barrendome/status/835888276808478720>\n"
             "A bunch of the original map art that existed before the first reset can be found here: "
             "<https://i.imgur.com/RcN0xiq.jpg>\n"
-            "Maps still get regularly reset to this day.\n"
+            "Maps were reset many times after that, but since 1.13 map IDs are stored as signed ints (32 bits) instead "
+            "of shorts, and negative map IDs behave the same as positive ones, meaning there are a total of "
+            "4'294'967'296 different possible map IDs. This means maps can no longer be disabled and a complete reset "
+            "is all but impossible."
         )
 
         await ctx.send(message)
