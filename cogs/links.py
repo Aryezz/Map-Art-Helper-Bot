@@ -68,6 +68,17 @@ class LinkCommands(commands.Cog, name="Links"):
 
         await ctx.send(message)
 
+    @commands.command()
+    async def printer(self, ctx):
+        """Link to THCFree's litematica printer with 2b2t Grim bypass"""
+        message = (
+            "https://github.com/THCFree/litematica-printer/releases/latest\n"
+            "also read the [README](https://github.com/THCFree/litematica-printer)\n"
+            "**NOTE: USE MODS AT YOUR OWN RISK, ANY MOD COULD BE A RAT!!!**"
+        )
+
+        await ctx.send(message)
+
 
 async def setup(client):
     await client.add_cog(LinkCommands(client))
