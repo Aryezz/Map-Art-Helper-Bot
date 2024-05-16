@@ -73,7 +73,7 @@ class LinkCommands(commands.Cog, name="Links"):
         """Link to THCFree's litematica printer with 2b2t Grim bypass"""
         message = (
             "https://github.com/THCFree/litematica-printer/releases/latest\n"
-            "also read the [README](https://github.com/THCFree/litematica-printer)\n"
+            "also read the [README](<https://github.com/THCFree/litematica-printer>)\n"
             "**NOTE: USE MODS AT YOUR OWN RISK, ANY MOD COULD BE A RAT!!!**"
         )
 
