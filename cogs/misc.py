@@ -226,8 +226,15 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((56, 31), "flat", "carpet only", "The Chronicles of Narnia", ["GAN G SEA LANTERN"],
                   1220514239794380920),
         BigMapArt((11, 11), "flat", "carpet only", "Mapopoly Remake", ["DuctTapeMessiah"], 1221594752256970894),
-        BigMapArt((28, 16), "flat", "carpet only", "Andromeda", ["CrowTheBest", "Zoooroo", "DrunkTemo", "xVoid",
-                                                            "purppl1q1337", "GaussDrake"], 1246205275833110700),
+        BigMapArt((28, 16), "flat", "carpet only", "Andromeda",
+                  ["CrowTheBest", "Zoooroo", "DrunkTemo", "xVoid", "purppl1q1337", "GaussDrake"], 1246205275833110700),
+        BigMapArt((4, 3), "semi-staircased", "fullblock", "Princess Mononoke - Tree frame",
+                  ["Radaggon", "Jalvaviel", "JeeJ_LEL"], 1236281012888272896),
+        BigMapArt((8, 4), "flat", "carpet only", "Fit vs Rusher", ["DuctTapeMessiah"], 1226665632725209139),
+        BigMapArt((5, 5), "staircased", "full colour", "fork and knife emoji", ["B-_-Kala"], 1225127888815259779),
+        BigMapArt((4, 6), "staircased", "full colour", "Melina", ["KevinKC2014"], 979443925456650330),
+        BigMapArt((4, 6), "staircased", "full colour", "Ranni", ["KevinKC2014"], 979443925456650330),
+
     ]
 
     def __init__(self, bot):
@@ -283,6 +290,11 @@ class MiscCommands(commands.Cog, name="Misc"):
         """
 
         maps_to_consider: List[BigMapArt] = self.biggest_maps
+
+        # without any filters, the cutoff is 32 individual maps
+        # => smaller maps only show up if you explicitly filter
+        if len(filters) == 0:
+            maps_to_consider = filter(lambda m: m.total_maps >= 32, maps_to_consider)
 
         filter_flat_options: List[str] = ["-f", "-flat"]
         if any(f in filters for f in filter_flat_options):
