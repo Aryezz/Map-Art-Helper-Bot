@@ -225,7 +225,9 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((10, 14), "flat", "carpet only", "one punch man", ["GAN G SEA LANTERN"], 1220513849925570602),
         BigMapArt((56, 31), "flat", "carpet only", "The Chronicles of Narnia", ["GAN G SEA LANTERN"],
                   1220514239794380920),
-        BigMapArt((11, 11), "flat", "carpet", "Mapopoly Remake", ["DuctTapeMessiah"], 1221594752256970894),
+        BigMapArt((11, 11), "flat", "carpet only", "Mapopoly Remake", ["DuctTapeMessiah"], 1221594752256970894),
+        BigMapArt((28, 16), "flat", "carpet only", "Andromeda", ["CrowTheBest", "Zoooroo", "DrunkTemo", "xVoid",
+                                                            "purppl1q1337", "GaussDrake"], 1246205275833110700),
     ]
 
     def __init__(self, bot):
