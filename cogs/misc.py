@@ -294,7 +294,7 @@ class MiscCommands(commands.Cog, name="Misc"):
         # without any filters, the cutoff is 32 individual maps
         # => smaller maps only show up if you explicitly filter
         if len(filters) == 0:
-            maps_to_consider = filter(lambda m: m.total_maps >= 32, maps_to_consider)
+            maps_to_consider = list(filter(lambda m: m.total_maps >= 32, maps_to_consider))
 
         filter_flat_options: List[str] = ["-f", "-flat"]
         if any(f in filters for f in filter_flat_options):
