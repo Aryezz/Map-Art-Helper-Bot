@@ -74,7 +74,9 @@ class LinkCommands(commands.Cog, name="Links"):
         message = (
             "https://github.com/THCFree/litematica-printer/releases/latest\n"
             "also read the [README](<https://github.com/THCFree/litematica-printer>)\n"
-            "**NOTE: USE MODS AT YOUR OWN RISK, ANY MOD COULD BE A RAT!!!**"
+            "**NOTE: USE MODS AT YOUR OWN RISK, ANY MOD COULD BE A RAT!!!**\n"
+            "Warning the 1.21 version of printer uses a third party fork of litematica"
+            "and malilib use at your own risk please read the README for more information"
         )
 
         await ctx.send(message)
