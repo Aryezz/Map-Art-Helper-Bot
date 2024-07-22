@@ -292,6 +292,9 @@ class MiscCommands(commands.Cog, name="Misc"):
             to filter out carpet-only maps, use `-c` or `-co`
         """
 
+        if page is None:  # make mypy shut up
+            return
+
         maps_to_consider: List[BigMapArt] = self.biggest_maps
 
         # without any filters, the cutoff is 32 individual maps
@@ -324,7 +327,10 @@ class MiscCommands(commands.Cog, name="Misc"):
             rank = i + 1 + (page - 1) * 10
             message += f"**{ranks.get(rank, f'{rank}:')}** {bigmap.line}\n"
 
-        message += f"\n_Page {page}/{max_page} - use `!!biggest <n>` to see page n_"
+        if page < max_page:
+            message += f"\n_Page {page}/{max_page} - use `!!biggest {page + 1}` to see next page_"
+        else:
+            message += f"\n_Page {page}/{max_page} - use `!!biggest {page - 1}` to see previous page_"
 
         await ctx.send(message)
 
