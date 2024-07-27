@@ -232,8 +232,8 @@ class HelpCommands(commands.Cog, name="Help"):
     async def lightning(self, ctx):
         """Info about lightning strikes"""
         message = (
-            "Lightning strikes can burn holes in your map, to prevent this add a layer of glass on top or never load "
-            "the chunks after completion."
+            "Lightning strikes can burn holes in your map, to prevent this, add lightning rods on the 4 corners of the "
+            "map (after locking it), add layer of glass on top or never load the chunks after completion."
         )
 
         await ctx.send(message)
