@@ -329,9 +329,10 @@ class MiscCommands(commands.Cog, name="Misc"):
 
         message += f"\n_Page {page}/{max_page}"
         if page < max_page:
-            message += f" - use `!!biggest {page + 1}` to see next page_"
+            message += f" - use `!!biggest {page + 1}` to see next page"
         elif page > 1:  # only show previous page hint if not on first page
-            message += f" - use `!!biggest {page - 1}` to see previous page_"
+            message += f" - use `!!biggest {page - 1}` to see previous page"
+        message += "_"  # end italics
 
         await ctx.send(message)
 
