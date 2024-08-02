@@ -327,10 +327,11 @@ class MiscCommands(commands.Cog, name="Misc"):
             rank = i + 1 + (page - 1) * 10
             message += f"**{ranks.get(rank, f'{rank}:')}** {bigmap.line}\n"
 
+        message += f"\n_Page {page}/{max_page}"
         if page < max_page:
-            message += f"\n_Page {page}/{max_page} - use `!!biggest {page + 1}` to see next page_"
-        else:
-            message += f"\n_Page {page}/{max_page} - use `!!biggest {page - 1}` to see previous page_"
+            message += f" - use `!!biggest {page + 1}` to see next page_"
+        elif page > 1:  # only show previous page hint if not on first page
+            message += f" - use `!!biggest {page - 1}` to see previous page_"
 
         await ctx.send(message)
 
