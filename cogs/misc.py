@@ -167,7 +167,7 @@ class BigMapArt:
 
     @property
     def line(self):
-        size_info = f"{self.size[0]} x {self.size[1]}, ({self.total_maps} maps)"
+        size_info = f"{self.size[0]} x {self.size[1]} ({self.total_maps} maps)"
         extra_info = f"[{self.type}, {self.palette}] - [**{self.name}**]({self.link}) by **{self.artists_str}**"
 
         return size_info + " - " + extra_info
@@ -176,6 +176,10 @@ class BigMapArt:
 class MiscCommands(commands.Cog, name="Misc"):
     """Miscellaneous commands"""
 
+    # informal cutoff for inclusion:
+    # flat: 32 maps
+    # semi-staircased: 12 maps
+    # staircased: 8 maps
     biggest_maps = [
         BigMapArt((27, 16), "dual-layered", "two-colour", "no comment", ["popstonia"], 910748616283545640),
         BigMapArt((21, 12), "staircased", "full colour", "Angel's Mirror", ["KevinKC2014"], 953371453447884851),
@@ -238,6 +242,9 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((4, 6), "staircased", "full colour", "Ranni", ["KevinKC2014"], 979443925456650330),
         BigMapArt((4, 2), "staircased", "full colour", "Tifa NSFW 2", ["CreightTrain0079"], 1245934868970606672),
         BigMapArt((3, 3), "staircased", "carpet only", "untitled", ["EXALTED JF PX"], 1194396923885531228),
+        BigMapArt((5, 3), "staircased", "carpet only", "King of the world", ["zoooroo"], 1251910659692564601),
+        BigMapArt((2, 4), "semi-staircased", "full colour", "Marika and the Rune of Death", ["Radagon"], 1251966163706056705),
+        BigMapArt((10, 10), "flat", "carpet only", "Randar", ["DuctTapeMessiah"], 1252019712619974700),
     ]
 
     def __init__(self, bot):
