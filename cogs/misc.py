@@ -259,7 +259,7 @@ class MiscCommands(commands.Cog, name="Misc"):
         self.biggest_maps = sorted(self.biggest_maps, key=lambda x: (x.total_maps, x.message_id * -1), reverse=True)
 
     @commands.is_nsfw()
-    @commands.command()
+    @commands.command(enabled=False)
     async def stitch(self, ctx, *, map_art: Union[SingleMapArt, MultiMapRange, MultiMapList]):
         """
         Stitches together maps from mapartwall, map_ids has to be one of the following formats:
@@ -271,7 +271,7 @@ class MiscCommands(commands.Cog, name="Misc"):
             await ctx.send(file=await map_art.generate_map(ctx))
 
     @commands.is_nsfw()
-    @commands.command(aliases=["id"])
+    @commands.command(aliases=["id"], enabled=False)
     async def map(self, ctx, map_art: SingleMapArt):
         """Sends a map from mapartwall"""
         async with ctx.channel.typing():
