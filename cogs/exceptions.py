@@ -1,5 +1,3 @@
-import sys
-import traceback
 import logging
 
 import discord
@@ -32,23 +30,22 @@ class CommandErrorHandler(commands.Cog):
     async def on_command_error(self, ctx: commands.Context, error: Exception):
         error = getattr(error, 'original', error)
 
-        if isinstance(error, commands.CommandNotFound):
-            return  # prevent log spam from typos, etc.
-        elif isinstance(error, commands.MissingRequiredArgument):
-            await ctx.reply("Missing Argument: " + str(error.param))
-            return
-        elif isinstance(error, commands.BadArgument):
-            await ctx.reply("Bad argument: " + str(error))
-            return
-        elif isinstance(error, commands.NSFWChannelRequired):
-            await ctx.reply("This command can only be used in NSFW channels")
-            return
-        elif isinstance(error, commands.BadUnionArgument):
-            await ctx.reply("Arguments could not be parsed, check format")
-            return
-
-        logger.error('Ignoring {} from message `{}`'.format(type(error).__name__, ctx.message.content))
-        logger.error(error, exc_info=False, stack_info=True)
+        match error:
+            case commands.CommandNotFound():
+                pass  # prevent log spam from typos, etc.
+            case commands.MissingRequiredArgument():
+                await ctx.reply("Missing Argument: " + str(error.param))
+            case commands.BadArgument():
+                await ctx.reply("Bad argument: " + str(error))
+            case commands.NSFWChannelRequired():
+                await ctx.reply("This command can only be used in NSFW channels")
+            case commands.BadUnionArgument():
+                await ctx.reply("Arguments could not be parsed, check format")
+            case commands.DisabledCommand():
+                await ctx.reply("This command is currently disabled")
+            case _:
+                logger.error('Ignoring {} from message `{}`'.format(type(error).__name__, ctx.message.content))
+                logger.error(error, exc_info=False, stack_info=True)
 
 
 async def setup(client):
