@@ -230,10 +230,14 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((56, 31), "flat", "carpet only", "The Chronicles of Narnia", ["GAN G SEA LANTERN"],
                   1220514239794380920),
         BigMapArt((11, 11), "flat", "carpet only", "Mapopoly Remake", ["DuctTapeMessiah"], 1221594752256970894),
-        BigMapArt((28, 16), "flat", "carpet only", "Andromeda",
-                  ["CrowTheBest", "Zoooroo", "DrunkTemo", "xVoid", "purppl1q1337", "GaussDrake"], 1246205275833110700),
         BigMapArt((8, 4), "flat", "carpet only", "Fit vs Rusher", ["DuctTapeMessiah"], 1226665632725209139),
         BigMapArt((8, 5), "flat", "carpet only", "2018 Monaco Grand Prix", ["Lawnguy"], 1242692739280408596),
+        BigMapArt((28, 16), "flat", "carpet only", "Andromeda",
+                  ["CrowTheBest", "Zoooroo", "DrunkTemo", "xVoid", "purppl1q1337", "GaussDrake"], 1246205275833110700),
+        BigMapArt((6, 8), "flat", "carpet only", "Trigun", ["DuctTapeMessiah"], 1246577236249935933),
+        BigMapArt((2, 4), "semi-staircased", "full colour", "Marika and the Rune of Death", ["Radagon"],
+                  1251966163706056705),
+        BigMapArt((10, 10), "flat", "carpet only", "Randar", ["DuctTapeMessiah"], 1252019712619974700),
 
         BigMapArt((5, 5), "staircased", "full colour", "fork and knife emoji", ["B-_-Kala"], 1225127888815259779),
         BigMapArt((4, 3), "semi-staircased", "full colour", "Princess Mononoke - Tree frame",
@@ -243,8 +247,6 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((4, 2), "staircased", "full colour", "Tifa NSFW 2", ["CreightTrain0079"], 1245934868970606672),
         BigMapArt((3, 3), "staircased", "carpet only", "untitled", ["EXALTED JF PX"], 1194396923885531228),
         BigMapArt((5, 3), "staircased", "carpet only", "King of the world", ["zoooroo"], 1251910659692564601),
-        BigMapArt((2, 4), "semi-staircased", "full colour", "Marika and the Rune of Death", ["Radagon"], 1251966163706056705),
-        BigMapArt((10, 10), "flat", "carpet only", "Randar", ["DuctTapeMessiah"], 1252019712619974700),
     ]
 
     def __init__(self, bot):
