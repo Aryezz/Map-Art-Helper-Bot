@@ -238,7 +238,9 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((2, 4), "semi-staircased", "full colour", "Marika and the Rune of Death", ["Radagon"],
                   1251966163706056705),
         BigMapArt((10, 10), "flat", "carpet only", "Randar", ["DuctTapeMessiah"], 1252019712619974700),
+        BigMapArt((30, 42), "staircased", "full colour", "Angel's Melody", ["KevinKC2014"], 1280588126980542578),
 
+        # small but staircased
         BigMapArt((5, 5), "staircased", "full colour", "fork and knife emoji", ["B-_-Kala"], 1225127888815259779),
         BigMapArt((4, 3), "semi-staircased", "full colour", "Princess Mononoke - Tree frame",
                   ["Radaggon", "Jalvaviel", "JeeJ_LEL"], 1236281012888272896),
@@ -247,6 +249,7 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((4, 2), "staircased", "full colour", "Tifa NSFW 2", ["CreightTrain0079"], 1245934868970606672),
         BigMapArt((3, 3), "staircased", "carpet only", "untitled", ["EXALTED JF PX"], 1194396923885531228),
         BigMapArt((5, 3), "staircased", "carpet only", "King of the world", ["zoooroo"], 1251910659692564601),
+
     ]
 
     def __init__(self, bot):
