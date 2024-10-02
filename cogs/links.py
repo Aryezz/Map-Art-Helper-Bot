@@ -70,10 +70,10 @@ class LinkCommands(commands.Cog, name="Links"):
 
     @commands.command()
     async def printer(self, ctx):
-        """Link to THCFree's litematica printer with 2b2t Grim bypass"""
+        """Link to IceTank's litematica printer with 2b2t Grim bypass"""
         message = (
-            "https://github.com/THCFree/litematica-printer/releases/latest\n"
-            "also read the [README](<https://github.com/THCFree/litematica-printer>)\n"
+            "https://github.com/IceTank/litematica-printer/releases/latest\n"
+            "also read the [README](<https://github.com/IceTank/litematica-printer>)\n"
             "**NOTE: USE MODS AT YOUR OWN RISK, ANY MOD COULD BE A RAT!!!**\n"
             "**Warning:** the 1.21 version of printer uses a third party fork of litematica "
             "and malilib. Use at your own risk and read the README for more information"
