@@ -239,6 +239,7 @@ class MiscCommands(commands.Cog, name="Misc"):
                   1251966163706056705),
         BigMapArt((10, 10), "flat", "carpet only", "Randar", ["DuctTapeMessiah"], 1252019712619974700),
         BigMapArt((30, 42), "staircased", "full colour", "Angel's Melody", ["KevinKC2014"], 1280588126980542578),
+        BigMapArt((25, 35), "flat", "carpet only", "The True Kings", ["P529", "Camii"], 1291181240560390285),
 
         # small but staircased
         BigMapArt((5, 5), "staircased", "full colour", "fork and knife emoji", ["B-_-Kala"], 1225127888815259779),
