@@ -235,8 +235,6 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((28, 16), "flat", "carpet only", "Andromeda",
                   ["CrowTheBest", "Zoooroo", "DrunkTemo", "xVoid", "purppl1q1337", "GaussDrake"], 1246205275833110700),
         BigMapArt((6, 8), "flat", "carpet only", "Trigun", ["DuctTapeMessiah"], 1246577236249935933),
-        BigMapArt((2, 4), "semi-staircased", "full colour", "Marika and the Rune of Death", ["Radagon"],
-                  1251966163706056705),
         BigMapArt((10, 10), "flat", "carpet only", "Randar", ["DuctTapeMessiah"], 1252019712619974700),
         BigMapArt((30, 42), "staircased", "full colour", "Angel's Melody", ["KevinKC2014"], 1280588126980542578),
         BigMapArt((25, 35), "flat", "carpet only", "The True Kings", ["P529", "Camii"], 1291181240560390285),
@@ -250,6 +248,9 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((4, 2), "staircased", "full colour", "Tifa NSFW 2", ["CreightTrain0079"], 1245934868970606672),
         BigMapArt((3, 3), "staircased", "carpet only", "untitled", ["EXALTED JF PX"], 1194396923885531228),
         BigMapArt((5, 3), "staircased", "carpet only", "King of the world", ["zoooroo"], 1251910659692564601),
+        BigMapArt((2, 4), "semi-staircased", "full colour", "Marika and the Rune of Death", ["Radagon"],
+                  1251966163706056705),
+        BigMapArt((3, 4), "semi-staircased", "full colour", "Montparnasse Train Crash", ["JeeJ_LEL"], 1289958472821248020),
 
     ]
 
