@@ -15,6 +15,7 @@ from PIL import Image
 import humanize
 
 from cogs import exceptions
+from cogs import checks
 
 session = aiohttp.ClientSession()
 
@@ -292,6 +293,7 @@ class MiscCommands(commands.Cog, name="Misc"):
         elif isinstance(error, exceptions.BlacklistedMapError):
             logger.error(error)
 
+    @checks.is_in_bot_stuff()
     @commands.command(aliases=["largest"])
     async def biggest(self, ctx, page: Optional[int] = 1, *filters):
         """The biggest map art on 2b2t

@@ -3,6 +3,9 @@ import logging
 import discord
 from discord.ext import commands
 
+from cogs import checks
+
+
 logger = logging.getLogger("discord.mapart.exceptions")
 
 
@@ -43,6 +46,11 @@ class CommandErrorHandler(commands.Cog):
                 await ctx.reply("Arguments could not be parsed, check format")
             case commands.DisabledCommand():
                 await ctx.reply("This command is currently disabled")
+            case checks.BotStuffOnly():
+                # FIXME: hardcoded channel ID
+                await ctx.reply("This command only works in <#402917135225192458>")
+            case commands.CheckFailure():
+                await ctx.reply("A check for this command failed")
             case _:
                 logger.error('Ignoring {} from message `{}`'.format(type(error).__name__, ctx.message.content))
                 logger.error(error, exc_info=False, stack_info=True)
