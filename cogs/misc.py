@@ -241,8 +241,7 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((5, 3), "staircased", "carpet only", "King of the world", ["zoooroo"], 1251910659692564601),
         BigMapArt((2, 4), "semi-staircased", "full colour", "Marika and the Rune of Death", ["Radagon"], 1251966163706056705),
         BigMapArt((3, 4), "semi-staircased", "full colour", "Montparnasse Train Crash", ["JeeJ_LEL"], 1289958472821248020),
-        BigMapArt((3, 3), "staircased", "full colour", "La Mitrailleuse", ["IceTank", "JeeJ_LEL", "Jalvaviel"],
-                  1300942131178766437),
+        BigMapArt((3, 3), "staircased", "full colour", "La Mitrailleuse", ["IceTank", "JeeJ_LEL", "Jalvaviel"], 1300942131178766437),
         BigMapArt((4, 6), "semi-staircased", "full colour", "Maliketh", ["Radaggon"], 1302302922415014009),
         BigMapArt((2, 4), "staircased", "full colour", "Sakura Miko", ["Wilbur"], 1298987270342311976),
         BigMapArt((6, 4), "staircased", "greyscale", "Eren, Ch. 110", ["Synthestra"], 1301401955905699900),
@@ -291,6 +290,8 @@ class MiscCommands(commands.Cog, name="Misc"):
     @commands.command(aliases=["largest"])
     async def biggest(self, ctx, page: Optional[int] = 1, *filters):
         """The biggest map art on 2b2t
+
+        Usage: !!biggest [page] [filters]
 
         Parameters
         ----------
