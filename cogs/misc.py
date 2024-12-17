@@ -239,6 +239,7 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((10, 10), "flat", "carpet only", "Randar", ["DuctTapeMessiah"], 1252019712619974700),
         BigMapArt((30, 42), "staircased", "full colour", "Angel's Melody", ["KevinKC2014"], 1280588126980542578),
         BigMapArt((25, 35), "flat", "carpet only", "The True Kings", ["P529", "Camii"], 1291181240560390285),
+        BigMapArt((6, 8), "flat", "greyscale", "unnamed (nun)", ["Hecklar"], 1309017165705515018),
 
         # small but staircased
         BigMapArt((5, 5), "staircased", "full colour", "fork and knife emoji", ["B-_-Kala"], 1225127888815259779),
@@ -252,6 +253,12 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((2, 4), "semi-staircased", "full colour", "Marika and the Rune of Death", ["Radagon"],
                   1251966163706056705),
         BigMapArt((3, 4), "semi-staircased", "full colour", "Montparnasse Train Crash", ["JeeJ_LEL"], 1289958472821248020),
+        BigMapArt((2, 4), "staircased", "full colour", "Sakura Miko", ["Wilbur"], 1298987270342311976),
+        BigMapArt((3, 3), "staircased", "full colour", "La Mitrailleuse", ["IceTank", "JeeJ_LEL", "Jalvaviel"], 1300942131178766437),
+        BigMapArt((6, 4), "staircased", "greyscale", "Eren, Ch. 110", ["Synthestra"], 1301401955905699900),
+        BigMapArt((4, 6), "semi-staircased", "full colour", "Maliketh", ["Radagon"], 1302302922415014009),
+        BigMapArt((4, 3), "staircased", "full colour", "Die Hard", ["_xque"], 1315384372924387340),
+        BigMapArt((4, 3), "staircased", "full colour", "Family Guy", ["Jaack420"], 1316142094594609213),
 
     ]
 
