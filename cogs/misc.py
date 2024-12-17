@@ -189,35 +189,27 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((8, 8), "flat + terrain", "full colour", "Sky Masons", ["The Spawn Masons"], 916099357823103038),
         BigMapArt((9, 6), "flat", "two-colour", "Abaddons Last Art", ["Phi", "Albatros", "Tae"], 650500181573500928),
         BigMapArt((7, 7), "flat", "carpet only", "Fox Portrait", ["FoxMe"], 1161077180445499464),
-        BigMapArt((8, 5), "flat", "full colour", "Deathly Hallows", ["Aryezz", "IronException", "THCFree", "Sanku"],
-                  859364782891991040),
+        BigMapArt((8, 5), "flat", "full colour", "Deathly Hallows", ["Aryezz", "IronException", "THCFree", "Sanku"], 859364782891991040),
         BigMapArt((8, 4), "flat", "full colour", "Gotta Catch Em' All", ["Harri"], 616841031605944360),
         BigMapArt((11, 16), "flat", "carpet only", "The Diary", ["CirocDrip"], 1203487381878079548),
-        BigMapArt((15, 10), "flat", "carpet only", "sick fearless bastard", ["nyxis", "GAN G SEA LANTERN"],
-                  1203487345177788446),
+        BigMapArt((15, 10), "flat", "carpet only", "sick fearless bastard", ["nyxis", "GAN G SEA LANTERN"], 1203487345177788446),
         BigMapArt((9, 9), "flat", "carpet only", "DIMATOWN", ["GAN G SEA LANTERN", "DIMA"], 1203487165615579207),
-        BigMapArt((10, 8), "flat", "carpet only", "Hausemaster should just delete the entire world of 2b2t",
-                  ["GAN G SEA LANTERN"], 1203486991799549973),
+        BigMapArt((10, 8), "flat", "carpet only", "Hausemaster should just delete the entire world of 2b2t", ["GAN G SEA LANTERN"], 1203486991799549973),
         BigMapArt((15, 10), "flat", "carpet only", "yodieland", ["GAN G SEA LANTERN"], 1203486952855306330),
         BigMapArt((5, 8), "flat", "carpet only", "belle delphine", ["GAN G SEA LANTERN"], 1203486395583430758),
         BigMapArt((8, 4), "flat", "carpet only", "KING KRUST", ["GAN G SEA LANTERN"], 1203486365711466618),
-        BigMapArt((6, 8), "flat", "carpet only", "Godfrey, First Elden Lord", ["GAN G SEA LANTERN"],
-                  1203486235100708864),
+        BigMapArt((6, 8), "flat", "carpet only", "Godfrey, First Elden Lord", ["GAN G SEA LANTERN"], 1203486235100708864),
         BigMapArt((8, 8), "flat", "carpet only", "scrunch", ["GAN G SEA LANTERN"], 1203486157409755236),
         BigMapArt((6, 6), "flat", "carpet only", "Starscourge Radahn", ["GAN G SEA LANTERN"], 1203486002094673970),
         BigMapArt((8, 4), "flat", "carpet only", "GT-Four", ["GAN G SEA LANTERN"], 1203485858896945242),
         BigMapArt((7, 7), "flat", "carpet only", "big luni", ["GAN G SEA LANTERN"], 1203485846972530738),
         BigMapArt((6, 8), "flat", "carpet only", "joycongodz 999", ["GAN G SEA LANTERN"], 1203485833827459142),
-        BigMapArt((9, 5), "flat", "carpet only", "2b2t_Uncensored Mod Team", ["GAN G SEA LANTERN"],
-                  1203485398043459615),
+        BigMapArt((9, 5), "flat", "carpet only", "2b2t_Uncensored Mod Team", ["GAN G SEA LANTERN"], 1203485398043459615),
         BigMapArt((6, 6), "flat", "carpet only", "small luni", ["GAN G SEA LANTERN"], 1203485357887332382),
-        BigMapArt((20, 20), "flat", "carpet only", "Hubble Ultra Deep Field (2004)", ["DuctTapeMessiah"],
-                  1205328109579145296),
+        BigMapArt((20, 20), "flat", "carpet only", "Hubble Ultra Deep Field (2004)", ["DuctTapeMessiah"], 1205328109579145296),
         BigMapArt((8, 4), "flat", "carpet only", "2.2", ["CrowTheBest", "WrityGD", "M1vae"], 1197302445689274428),
-        BigMapArt((9, 9), "flat", "carpet only", "He is the One - The Matrix", ["DuctTapeMessiah"],
-                  1216129369525846118),
-        BigMapArt((9, 9), "flat", "carpet only", "party luna (crunchy cat)", ["GAN G SEA LANTERN"],
-                  1220512516137025636),
+        BigMapArt((9, 9), "flat", "carpet only", "He is the One - The Matrix", ["DuctTapeMessiah"], 1216129369525846118),
+        BigMapArt((9, 9), "flat", "carpet only", "party luna (crunchy cat)", ["GAN G SEA LANTERN"], 1220512516137025636),
         BigMapArt((6, 6), "flat", "carpet only", "penis_fucking @p_f", ["GAN G SEA LANTERN"], 1220511596951109652),
         BigMapArt((9, 5), "flat", "carpet only", "Castle in the Sky", ["GAN G SEA LANTERN"], 1220512849277747270),
         BigMapArt((10, 10), "flat", "carpet only", "MOGWARTS", ["GAN G SEA LANTERN"], 1220512934753603624),
@@ -228,13 +220,11 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((6, 6), "flat", "carpet only", "Malenia", ["GAN G SEA LANTERN"], 1220513568299155556),
         BigMapArt((16, 9), "flat", "carpet only", "vagabound", ["GAN G SEA LANTERN"], 1220513651476267058),
         BigMapArt((10, 14), "flat", "carpet only", "one punch man", ["GAN G SEA LANTERN"], 1220513849925570602),
-        BigMapArt((56, 31), "flat", "carpet only", "The Chronicles of Narnia", ["GAN G SEA LANTERN"],
-                  1220514239794380920),
+        BigMapArt((56, 31), "flat", "carpet only", "The Chronicles of Narnia", ["GAN G SEA LANTERN"], 1220514239794380920),
         BigMapArt((11, 11), "flat", "carpet only", "Mapopoly Remake", ["DuctTapeMessiah"], 1221594752256970894),
         BigMapArt((8, 4), "flat", "carpet only", "Fit vs Rusher", ["DuctTapeMessiah"], 1226665632725209139),
         BigMapArt((8, 5), "flat", "carpet only", "2018 Monaco Grand Prix", ["Lawnguy"], 1242692739280408596),
-        BigMapArt((28, 16), "flat", "carpet only", "Andromeda",
-                  ["CrowTheBest", "Zoooroo", "DrunkTemo", "xVoid", "purppl1q1337", "GaussDrake"], 1246205275833110700),
+        BigMapArt((28, 16), "flat", "carpet only", "Andromeda", ["CrowTheBest", "Zoooroo", "DrunkTemo", "xVoid", "purppl1q1337", "GaussDrake"], 1246205275833110700),
         BigMapArt((6, 8), "flat", "carpet only", "Trigun", ["DuctTapeMessiah"], 1246577236249935933),
         BigMapArt((10, 10), "flat", "carpet only", "Randar", ["DuctTapeMessiah"], 1252019712619974700),
         BigMapArt((30, 42), "staircased", "full colour", "Angel's Melody", ["KevinKC2014"], 1280588126980542578),
@@ -243,15 +233,13 @@ class MiscCommands(commands.Cog, name="Misc"):
 
         # small but staircased
         BigMapArt((5, 5), "staircased", "full colour", "fork and knife emoji", ["B-_-Kala"], 1225127888815259779),
-        BigMapArt((4, 3), "semi-staircased", "full colour", "Princess Mononoke - Tree frame",
-                  ["Radaggon", "Jalvaviel", "JeeJ_LEL"], 1236281012888272896),
+        BigMapArt((4, 3), "semi-staircased", "full colour", "Princess Mononoke - Tree frame", ["Radagon", "Jalvaviel", "JeeJ_LEL"], 1236281012888272896),
         BigMapArt((4, 6), "staircased", "full colour", "Melina", ["KevinKC2014"], 979443925456650330),
         BigMapArt((4, 6), "staircased", "full colour", "Ranni", ["KevinKC2014"], 979443925456650330),
         BigMapArt((4, 2), "staircased", "full colour", "Tifa NSFW 2", ["CreightTrain0079"], 1245934868970606672),
         BigMapArt((3, 3), "staircased", "carpet only", "untitled", ["EXALTED JF PX"], 1194396923885531228),
         BigMapArt((5, 3), "staircased", "carpet only", "King of the world", ["zoooroo"], 1251910659692564601),
-        BigMapArt((2, 4), "semi-staircased", "full colour", "Marika and the Rune of Death", ["Radagon"],
-                  1251966163706056705),
+        BigMapArt((2, 4), "semi-staircased", "full colour", "Marika and the Rune of Death", ["Radagon"], 1251966163706056705),
         BigMapArt((3, 4), "semi-staircased", "full colour", "Montparnasse Train Crash", ["JeeJ_LEL"], 1289958472821248020),
         BigMapArt((2, 4), "staircased", "full colour", "Sakura Miko", ["Wilbur"], 1298987270342311976),
         BigMapArt((3, 3), "staircased", "full colour", "La Mitrailleuse", ["IceTank", "JeeJ_LEL", "Jalvaviel"], 1300942131178766437),
@@ -259,7 +247,6 @@ class MiscCommands(commands.Cog, name="Misc"):
         BigMapArt((4, 6), "semi-staircased", "full colour", "Maliketh", ["Radagon"], 1302302922415014009),
         BigMapArt((4, 3), "staircased", "full colour", "Die Hard", ["_xque"], 1315384372924387340),
         BigMapArt((4, 3), "staircased", "full colour", "Family Guy", ["Jaack420"], 1316142094594609213),
-
     ]
 
     def __init__(self, bot):
@@ -304,6 +291,8 @@ class MiscCommands(commands.Cog, name="Misc"):
     @commands.command(aliases=["largest"])
     async def biggest(self, ctx, page: Optional[int] = 1, *filters):
         """The biggest map art on 2b2t
+
+        Usage: !!biggest [page] [filters]
 
         Parameters
         ----------
@@ -351,10 +340,11 @@ class MiscCommands(commands.Cog, name="Misc"):
             message += f"**{ranks.get(rank, f'{rank}:')}** {bigmap.line}\n"
 
         message += f"\n_Page {page}/{max_page}"
+        filters_joined = ' ' + ' '.join(filters) if filters else ""
         if page < max_page:
-            message += f" - use `!!biggest {page + 1}` to see next page"
+            message += f" - use `!!biggest {page + 1}{filters_joined}` to see next page"
         elif page > 1:  # only show previous page hint if not on first page
-            message += f" - use `!!biggest {page - 1}` to see previous page"
+            message += f" - use `!!biggest {page - 1}{filters_joined}` to see previous page"
         message += "_"  # end italics
 
         await ctx.send(message)
