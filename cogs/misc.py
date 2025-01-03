@@ -177,7 +177,7 @@ class BigMapArt:
 
 class MiscCommands(commands.Cog, name="Misc"):
     """Miscellaneous commands"""
-    url = "https://gitlab.com/Aryezz/map-art-helper-bot/-/raw/main/map_arts.txt"
+    big_map_url = "https://gitlab.com/Aryezz/map-art-helper-bot/-/raw/main/map_arts.csv"
 
     def __init__(self, bot):
         self.bot = bot
@@ -185,7 +185,7 @@ class MiscCommands(commands.Cog, name="Misc"):
         self.biggest_maps = []
 
     async def cog_load(self):
-        async with session.get(self.url, ssl=False) as resp:
+        async with session.get(self.big_map_url, ssl=False) as resp:
             if not resp.status == 200:
                 raise commands.CommandError("Could not load map data, HTTP status: " + str(resp.status))
 
