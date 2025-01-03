@@ -299,8 +299,6 @@ class MiscCommands(commands.Cog, name="Misc"):
             message += f" - use `!!biggest {page - 1}{filters_joined}` to see previous page"
         message += "_"  # end italics
 
-        print(message)
-
         await ctx.send(message)
 
     @commands.command()
