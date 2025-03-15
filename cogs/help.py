@@ -169,6 +169,30 @@ class HelpCommands(commands.Cog, name="Help"):
 
         await ctx.send(message)
 
+    @commands.command(aliases=["res"])
+    async def resolution(self, ctx):
+        """Tradeoffs concerning resolution"""
+        message = (
+            "# Resolution & Detail\n"
+            "Each Minecraft map covers a 128x128 block area. Using multiple maps enhances resolution and allows for"
+            "finer details.\n"
+            "\n"
+            "**Complexity & Color Constraints**\n"
+            "Single-map artworks have fewer pixels, limiting detail. Larger map art (e.g., 2x2 or 3x3 maps) provides"
+            "higher detail but demands more time and resources.\n"
+            "Maps with very high resolution may show aliasing artifacts, see `!!moire` for more info.\n"
+            "\n"
+            "**Example**\n"
+            "The first image is Angel's Mirror by KevinKC2014, measuring 21x12. In this version, the mouth, ears, scars,"
+            "and hands are clearly visible.\n"
+            "The second image is a 3x2 version of Angel's Mirror, where the mouth, ears, scars, and hands are not"
+            "visible, and the image appears noticeably pixelated.\n"
+            "https://media.discordapp.net/attachments/402917135225192458/1349948902681477242/Angels_Mirror.png\n"
+            "https://media.discordapp.net/attachments/402917135225192458/1349948903201443840/Untitled.png"
+        )
+
+        await ctx.send(message)
+
     @commands.command()
     async def text(self, ctx):
         """Tips for text on maps"""
