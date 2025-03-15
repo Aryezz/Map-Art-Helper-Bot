@@ -44,14 +44,14 @@ class LinkCommands(commands.Cog, name="Links"):
 
         await ctx.send(message)
 
-    @commands.command()
+    @commands.command(aliases=["mapmipmapmod", "mmmm"])
     async def moire(self, ctx):
         """It's like acid"""
         message = (
             "Check out the discussion here:\n"
             "https://discord.com/channels/349201680023289867/349480851915931653/919933674177306646\n"
             "\n"
-            "There is a mod which adds mip maps to maps, to anti-alias them, which removes moiré patterns.\n"
+            "There is a mod which adds mip maps for maps, to anti-alias them, which removes moiré patterns.\n"
             "https://modrinth.com/mod/mapmipmapmod\n"
             "**NOTE: USE MODS AT YOUR OWN RISK, ANY MOD COULD BE A RAT!!!**"
         )
