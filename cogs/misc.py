@@ -241,23 +241,32 @@ class MiscCommands(commands.Cog, name="Misc"):
 
     @checks.is_in_bot_stuff()
     @commands.command(aliases=["largest"])
-    async def biggest(self, ctx, page: Optional[int] = 1, *filters):
+    async def biggest(self, ctx, *args):
         """The biggest map art on 2b2t
 
-        Usage: !!biggest [page] [filters]
+        Usage: !!biggest [args]
 
         Parameters
         ----------
-        page : int, optional
-            The page number
-        filters : list, optional
-            Filters to apply to the list of maps.
+        args : list, optional
+            Page and filters to apply to the list of maps.
             To filter out flat maps, use `-f`,
             to filter out carpet-only maps, use `-c` or `-co`
         """
 
-        if page is None:  # make mypy shut up
-            return
+        filter_flat_options: Set[str] = {"-f", "-flat"}
+        filter_carpet_only_options: Set[str] = {"-c", "-co", "-carpet", "-carpetonly", "-carpet-only"}
+        legal_arguments: Set[str] = filter_flat_options | filter_carpet_only_options
+
+        # parse page num
+        page = 1
+        page_arg = [arg for arg in args if arg.isnumeric()]
+        if len(page_arg) == 1:
+            page = int(page_arg[0])
+        elif len(page_arg) > 1:
+            raise commands.BadArgument("Can only have one page number")
+
+        filters = {arg for arg in args if arg in legal_arguments}
 
         maps_to_consider: List[BigMapArt] = self.biggest_maps
 
@@ -266,12 +275,10 @@ class MiscCommands(commands.Cog, name="Misc"):
         if len(filters) == 0:
             maps_to_consider = list(filter(lambda m: m.total_maps >= 32, maps_to_consider))
 
-        filter_flat_options: List[str] = ["-f", "-flat"]
         if any(f in filters for f in filter_flat_options):
             flat_types: List[str] = ["flat", "dual-layered", "flat + terrain"]
             maps_to_consider = list(filter(lambda x: x.type not in flat_types, maps_to_consider))
 
-        filter_carpet_only_options: List[str] = ["-c", "-co", "-carpet", "-carpetonly", "-carpet-only"]
         if any(f in filters for f in filter_carpet_only_options):
             carpet_only_types: List[str] = ["carpet only", "two-colour", "98.7% carpet"]
             maps_to_consider = list(filter(lambda x: x.palette not in carpet_only_types, maps_to_consider))
@@ -292,14 +299,20 @@ class MiscCommands(commands.Cog, name="Misc"):
             message += f"**{ranks.get(rank, f'{rank}:')}** {bigmap.line}\n"
 
         message += f"\n_Page {page}/{max_page}"
-        filters_joined = ' ' + ' '.join(filters) if filters else ""
+        filters_joined = ' ' + ' '.join(filters) if args else ""
         if page < max_page:
             message += f" - use `!!biggest {page + 1}{filters_joined}` to see next page"
         elif page > 1:  # only show previous page hint if not on first page
             message += f" - use `!!biggest {page - 1}{filters_joined}` to see previous page"
         message += "_"  # end italics
 
-        await ctx.send(message)
+        if len(message) <= 2000:
+            await ctx.send(message)
+        else:
+            lines = message.split("\n")
+            await ctx.send("\n".join(lines[:6]))
+            await ctx.send("\n".join(lines[6:]))
+
 
     @commands.command()
     async def info(self, ctx):

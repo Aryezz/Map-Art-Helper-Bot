@@ -52,6 +52,7 @@ class CommandErrorHandler(commands.Cog):
             case commands.CheckFailure():
                 await ctx.reply("A check for this command failed")
             case _:
+                await ctx.send(f"Error while processing\n```txt\n{error}```")
                 logger.error('Ignoring {} from message `{}`'.format(type(error).__name__, ctx.message.content))
                 logger.error(error, exc_info=False, stack_info=True)
 
