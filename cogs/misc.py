@@ -299,7 +299,7 @@ class MiscCommands(commands.Cog, name="Misc"):
             message += f"**{ranks.get(rank, f'{rank}:')}** {bigmap.line}\n"
 
         message += f"\n_Page {page}/{max_page}"
-        filters_joined = ' ' + ' '.join(filters) if args else ""
+        filters_joined = (' ' + ' '.join(filters)) if filters else ""
         if page < max_page:
             message += f" - use `!!biggest {page + 1}{filters_joined}` to see next page"
         elif page > 1:  # only show previous page hint if not on first page
