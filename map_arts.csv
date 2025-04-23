@@ -20,7 +20,7 @@
 8;  4;  flat;            carpet only;  GT-Four;                                                 GAN G SEA LANTERN;                                                1203485858896945242
 6;  6;  flat;            carpet only;  Starscourge Radahn;                                      GAN G SEA LANTERN;                                                1203486002094673970
 8;  8;  flat;            carpet only;  scrunch;                                                 GAN G SEA LANTERN;                                                1203486157409755236
-6;  8;  flat;            carpet only;  "Godfrey, First Elden Lord";                             GAN G SEA LANTERN;                                                1203486235100708864
+6;  8;  flat;            carpet only;  Godfrey, First Elden Lord;                               GAN G SEA LANTERN;                                                1203486235100708864
 8;  4;  flat;            carpet only;  KING KRUST;                                              GAN G SEA LANTERN;                                                1203486365711466618
 5;  8;  flat;            carpet only;  belle delphine;                                          GAN G SEA LANTERN;                                                1203486395583430758
 15; 10; flat;            carpet only;  yodieland;                                               GAN G SEA LANTERN;                                                1203486952855306330
@@ -57,14 +57,42 @@
 7;  8;  flat;            carpet only;  The Death of Marat;                                      wobble flap, Brorock492;                                          1346881204896534548
 11; 6;  flat;            carpet only;  Sung Jinwoo;                                             Brorock492, wobble flap;                                          1349636963300540500
 13; 6;  flat;            carpet only;  Greatest Pirate;                                         Deafboy45;                                                        1350103013330649309
-5; 7;   flat;            carpet only;  Chess and Checkers;                                      Youtya_, m3tat0n, XXXMIPOH2015XXX, Evklid_;                       1350206701785055292
-7; 9;   flat;            carpet only;  He never sleeps, the judge.;                             wobble flap, Brorock492, Deafboy45;                               1353809224504709170
-8; 5;   flat;            carpet only;  Spaceballs The Map;                                      qxued;                                                            1353877143398121475
-8; 12;  flat;            carpet only;  Fallen Angel;                                            Vahali;                                                           1353886577289330708
-9; 15;  flat;            carpet only;  The Social Mirror;                                       NateO1117;                                                        1356277514905059348
-8; 6;   flat;            carpet only;  Chrono Trigger - Artist: Akira Toriyama;                 havlin;                                                           1356898593751044296
-9; 5;   flat;            carpet only;  Jurassic Park: T-Rex Escape;                             pewet;                                                            1358708483247313036
-9; 14;  flat;            full colour;  One and only Spiderman;                                  Deafboy45;                                                        1362530406657687825
+5;  7;  flat;            carpet only;  Chess and Checkers;                                      Youtya_, m3tat0n, XXXMIPOH2015XXX, Evklid_;                       1350206701785055292
+7;  9;  flat;            carpet only;  He never sleeps, the judge.;                             wobble flap, Brorock492, Deafboy45;                               1353809224504709170
+8;  5;  flat;            carpet only;  Spaceballs The Map;                                      qxued;                                                            1353877143398121475
+8;  12; flat;            carpet only;  Fallen Angel;                                            Vahali;                                                           1353886577289330708
+9;  15; flat;            carpet only;  The Social Mirror;                                       NateO1117;                                                        1356277514905059348
+8;  6;  flat;            carpet only;  Chrono Trigger - Artist: Akira Toriyama;                 havlin;                                                           1356898593751044296
+9;  5;  flat;            carpet only;  Jurassic Park: T-Rex Escape;                             pewet;                                                            1358708483247313036
+9;  14; flat;            full colour;  One and only Spiderman;                                  Deafboy45;                                                        1362530406657687825
+8;  5;  flat;            carpet only;  The victory of faith - George HARE;                      Skai, pi_po;                                                      1364534649044467813
+6;  6;  flat;            carpet only;  Lovers and Lautrec - Joseph Lorusso;                     Skai, pi_po;                                                      1364534712584114187
+8;  11; flat;            carpet only;  Léon Bonnat – Job;                                       Skai, pi_po;                                                      1364534849322614844
+8;  7;  flat;            carpet only;  Narcissus - 2017 Roberto Ferri;                          Skai, pi_po;                                                      1364535368984166453
+10; 7;  flat;            carpet only;  MALGRIM (mapart gallery);                                Skai, pi_po;                                                      1364535431416254494
+8;  9;  flat;            carpet only;  The Anchorite / Hermit - Ejsmond;                        Skai, pi_po;                                                      1364535551645978677
+8;  9;  flat;            carpet only;  George W Joy - The Bayswater Omnibus;                    Skai, pi_po;                                                      1364535603378782239
+10; 7;  flat;            carpet only;  Jean-Léon Gérôme - Diogenes;                             Skai, pi_po;                                                      1364535650715701250
+15; 10; flat;            carpet only;  Waterhouse - Saint Cecilia;                              Skai, pi_po;                                                      1364535756739317830
+9;  13; flat;            carpet only;  Waterhouse - Diogenes;                                   Skai, pi_po;                                                      1364535811759931422
+9;  17; flat;            carpet only;  Bouguereau - Aurore;                                     Skai, pi_po;                                                      1364535874456518729
+6;  7;  flat;            carpet only;  José Jiménez Aranda - Slave for Sale;                    Skai, pi_po;                                                      1364535939166376018
+7;  7;  flat;            carpet only;  Rembrandt - Bearded old man;                             Skai, pi_po;                                                      1364536008137506851
+8;  10; flat;            carpet only;  Eugène Delacroix - Jeune orpheline;                      Skai, pi_po;                                                      1364536071605456958
+10; 10; flat;            carpet only;  Margaret in the Church - Nicaise de Keyser;              Skai, pi_po;                                                      1364536116941684747
+9;  17; flat;            carpet only;  Bouguereau - Psyche;                                     Skai, pi_po;                                                      1364536175498625097
+10; 10; flat;            carpet only;  Lawrence Alma Tadema - The Three Graces;                 Skai, pi_po;                                                      1364536230905122838
+12; 8;  flat;            carpet only;  The Women of Amphissa - Lawrence A Tadema;               Skai, pi_po;                                                      1364536278355411004
+13; 8;  flat;            carpet only;  Jacques Louis David - The Death of Socrates;             Skai, pi_po;                                                      1364536332432576524
+8;  12; flat;            carpet only;  Poynter - Cave of the Storm Nymphs;                      Skai, pi_po;                                                      1364536395057594368
+8;  6;  flat;            carpet only;  Moonlit Shore - Julius Olsson;                           Skai, pi_po;                                                      1364536445574053920
+8;  11; flat;            carpet only;  Teodor Axentowicz - Anachoreta;                          Skai, pi_po;                                                      1364536495360184340
+11; 10; flat;            carpet only;  Diogenes to Alexander, get out of the SUN;               Skai, pi_po;                                                      1364536589270646806
+8;  4;  flat;            carpet only;  2B2T is for friends! ❤ Brycedey;                        Skai, pi_po;                                                      1364536686628835339
+5;  8;  flat;            carpet only;  Legend of BRABcraft;                                     Skai, pi_po;                                                      1364537087021416458
+12; 8;  flat;            carpet only;  clink_clank, Romenna;                                    Skai, pi_po;                                                      1364537130109370448
+11; 8;  flat;            carpet only;  Sorolla - Fish is Expensive?;                            Skai, pi_po;                                                      1364537181233872917
+20; 6;  flat;            carpet only;  Philosophers;                                            GAN G SEA LANTERN, pi_po;                                         1364537397567684618
 
 # small but staircased
 4;  6;  staircased;      full colour;  Melina;                                                  KevinKC2014;                                                       979443925456650330
@@ -77,7 +105,7 @@
 3;  4;  semi-staircased; full colour;  Montparnasse Train Crash;                                JeeJ_LEL;                                                         1289958472821248020
 2;  4;  staircased;      full colour;  Sakura Miko;                                             Wilbur;                                                           1298987270342311976
 3;  3;  staircased;      full colour;  La Mitrailleuse;                                         IceTank, JeeJ_LEL, Jalvaviel;                                     1300942131178766437
-6;  4;  staircased;      greyscale;    "Eren, Ch. 110";                                         Synthestra;                                                       1301401955905699900
+6;  4;  staircased;      greyscale;    Eren, Ch. 110;                                           Synthestra;                                                       1301401955905699900
 4;  6;  semi-staircased; full colour;  Maliketh;                                                Radagon;                                                          1302302922415014009
 4;  3;  staircased;      full colour;  Die Hard;                                                _xque;                                                            1315384372924387340
 4;  3;  staircased;      full colour;  Family Guy;                                              Jaack420;                                                         1316142094594609213
