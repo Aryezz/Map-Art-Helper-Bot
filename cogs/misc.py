@@ -1,7 +1,3 @@
-import hashlib
-import re
-import io
-import random
 import math
 import logging
 import csv
@@ -12,135 +8,13 @@ from datetime import datetime
 import aiohttp
 import discord
 from discord.ext import commands
-from PIL import Image
 import humanize
 
-from cogs import exceptions
 from cogs import checks
 
 session = aiohttp.ClientSession()
 
 logger = logging.getLogger("discord.mapart.misc")
-
-
-@dataclass
-class MapMetadata:
-    id: int
-    rotation: int = 0
-    position: Tuple[int, int] = (0, 0)
-
-    async def fetch(self) -> bytes:
-        # v parameter is used for caching, using random value to avoid getting outdated images
-        url = f"https://mapartwall.rebane2001.com/mapimg/map_{self.id!s}.png?v={random.randint(0, 999_999_999)}"
-
-        async with session.get(url, ssl=False) as resp:
-            if not resp.status == 200:
-                raise commands.CommandError("Mapartwall responded with response status code " + str(resp.status))
-
-            data = await resp.read()
-
-            return data
-
-
-@dataclass
-class MapArt:
-    BLACKLIST = [  # blacklist for maps that violate discord TOS
-            "89be42fca8ecce7d821bf36d82d9ffd00157d5b5a943dd379141607412e316b9",
-            "ae6d3a992c15ee9b4f004d9e52dde6ed65681a1c0830e35475ac39452b11377b",
-            "440dbb039ff6f2d57c0a540c84f0d07e32687c295388be76ec88fca990fc553e",
-            "780dcdcf480185c5823b5115c4acbdfb251b45cba5bc09dc533ea9640e75d1e2",
-            "9846db0d5cdd13deeea480d36e88bdc263e22dbea0458d90a84e599341a7f5cb",
-            "8f3289eec87009bdc6f191c9223b9e753bf6ce86cf5daa9927ae4f2221ae363a",
-            "83e247b8454deaeffda10bb621af803853b2598ad633340e7233f20df0160d28",
-        ]
-
-    maps: List[MapMetadata]
-
-    async def generate_map(self, ctx, upscale: bool = False) -> discord.File:
-        map_art_width = max(meta.position[0] for meta in self.maps) + 1
-        map_art_height = max(meta.position[1] for meta in self.maps) + 1
-        full_map = Image.new("RGBA", (map_art_width * 128, map_art_height * 128))
-        map_cache: Dict[int, bytes] = {}
-
-        for map in self.maps:
-            if map.id not in map_cache.keys():
-                map_cache[map.id] = await map.fetch()
-            map_bytes = map_cache[map.id]
-
-            if hashlib.sha256(map_bytes).hexdigest() in self.BLACKLIST:
-                raise exceptions.BlacklistedMapError(map.id, ctx.author)
-
-            img = Image.open(io.BytesIO(map_bytes)).convert("RGBA")
-
-            if img.getextrema()[3][1] < 255:  # Map is completely transparent
-                raise exceptions.TransparentMapError(map.id)
-
-            if map.rotation:
-                img = img.rotate(map.rotation * -90)
-
-            full_map.paste(img, (map.position[0] * 128, map.position[1] * 128))
-
-        if upscale:  # up-scaling maps for better viewing in the discord client
-            full_map = full_map.resize((full_map.width * 4, full_map.height * 4), Image.NEAREST)
-
-        img_bytes = io.BytesIO()
-        full_map.save(img_bytes, format="PNG")
-        img_bytes.seek(0)
-
-        return discord.File(img_bytes, "map.png")
-
-
-class SingleMapArt(MapArt):
-    @classmethod
-    async def convert(cls, ctx, map_id: str):
-        if not map_id.isnumeric():
-            raise commands.BadArgument("Map ID is not numeric")
-
-        return cls([MapMetadata(id=int(map_id))])
-
-
-class MultiMapRange(MapArt):
-    @classmethod
-    async def convert(cls, ctx, argument: str):
-        if not (match := re.match(r"^(\d+)\s*-\s*(\d+)\s+(\d+)x(\d+)$", argument)):
-            raise commands.BadArgument("Invalid Format")
-
-        first_id, last_id = int(match[1]), int(match[2])
-        width, height = int(match[3]), int(match[4])
-
-        if not last_id - first_id + 1 == width * height:
-            raise commands.BadArgument("Incorrect number of maps for size")
-
-        if not 0 <= first_id < 32_767 or not 0 <= last_id < 32_767:
-            raise commands.BadArgument("Map ID must be between 0 and 32767")
-
-        map_ids = []
-        for i, map_id in enumerate(range(first_id, last_id + 1)):
-            x, y = i % width, i // width
-            map_ids.append(MapMetadata(id=map_id, position=(x, y)))
-
-        return cls(map_ids)
-
-
-class MultiMapList(MapArt):
-    @classmethod
-    async def convert(cls, ctx, argument: str):
-        if not re.match(r"^\d+(\.[1-3])?(\s*[,;]\s*\d+(\.[1-3])?)*$", argument):
-            raise commands.BadArgument("Invalid Format")
-
-        map_ids = []
-
-        for y, line in enumerate(argument.split(";")):
-            for x, map_meta in enumerate(line.split(",")):
-                split_meta = map_meta.split(".")
-                map_id, rot = int(split_meta[0]), int(split_meta[1]) if len(split_meta) == 2 else 0
-
-                if not 0 <= map_id < 32_767:
-                    raise commands.BadArgument("Map ID must be between 0 and 32767")
-
-                map_ids.append(MapMetadata(id=map_id, rotation=rot, position=(x, y)))
-
-        return cls(map_ids)
 
 
 @dataclass
@@ -209,35 +83,6 @@ class MiscCommands(commands.Cog, name="Misc"):
         # because the ordering is opposite for the two, we invert the message id, so when reversed we get the ascending
         # order that we want. There is probably a more pythonic way to do this, but whatever.
         self.biggest_maps = sorted(self.biggest_maps, key=lambda x: (x.total_maps, x.message_id * -1), reverse=True)
-
-    @commands.is_nsfw()
-    @commands.command(enabled=False)
-    async def stitch(self, ctx, *, map_art: Union[SingleMapArt, MultiMapRange, MultiMapList]):
-        """
-        Stitches together maps from mapartwall, map_ids has to be one of the following formats:
-        * 1234-1239 3x2 (generates 2x2 map with the ids 1234-1238)
-        * 1234,1235,1236;1237,1238,1239 (generates the same map, useful when the maps are not in order)
-        * 1234,1234.1;1234.3,1234.2 (add periods after an id to rotate the map 1-3 times clockwise)
-        """
-        async with ctx.channel.typing():
-            await ctx.send(file=await map_art.generate_map(ctx))
-
-    @commands.is_nsfw()
-    @commands.command(aliases=["id"], enabled=False)
-    async def map(self, ctx, map_art: SingleMapArt):
-        """Sends a map from mapartwall"""
-        async with ctx.channel.typing():
-            await ctx.send(file=await map_art.generate_map(ctx, upscale=True))
-
-    @map.error
-    @stitch.error
-    async def map_error(self, ctx, error):
-        error = getattr(error, 'original', error)
-
-        if isinstance(error, exceptions.TransparentMapError):
-            await ctx.reply(f"Map {error.map_id!s} is empty.")
-        elif isinstance(error, exceptions.BlacklistedMapError):
-            logger.error(error)
 
     @checks.is_in_bot_stuff()
     @commands.command(aliases=["largest"])
