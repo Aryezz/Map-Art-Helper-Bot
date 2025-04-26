@@ -113,6 +113,11 @@ class MiscCommands(commands.Cog, name="Misc"):
 
         filters = {arg for arg in args if arg in legal_arguments}
 
+        name_filter = None
+        for i in range(len(args) - 1):  # only loop to second last argument, because name still comes after
+            if args[i] == "-n":
+                name_filter = args[i + 1].lower()
+
         maps_to_consider: List[BigMapArt] = self.biggest_maps
 
         # without any filters, the cutoff is 32 individual maps
@@ -122,16 +127,19 @@ class MiscCommands(commands.Cog, name="Misc"):
 
         if any(f in filters for f in filter_flat_options):
             flat_types: List[str] = ["flat", "dual-layered", "flat + terrain"]
-            maps_to_consider = list(filter(lambda x: x.type not in flat_types, maps_to_consider))
+            maps_to_consider = list(filter(lambda m: m.type not in flat_types, maps_to_consider))
 
         if any(f in filters for f in filter_carpet_only_options):
             carpet_only_types: List[str] = ["carpet only", "two-colour", "98.7% carpet"]
-            maps_to_consider = list(filter(lambda x: x.palette not in carpet_only_types, maps_to_consider))
+            maps_to_consider = list(filter(lambda m: m.palette not in carpet_only_types, maps_to_consider))
+
+        if name_filter:
+            maps_to_consider = list(filter(lambda m: name_filter in map(lambda a: a.lower(), m.artists), maps_to_consider))
 
         max_page = math.ceil(len(maps_to_consider) / 10)
 
         if 0 >= page or page > max_page:
-            await ctx.reply(f"Page {page} is invalid.")
+            await ctx.reply(f"No results")
             return
 
         maps = maps_to_consider[(page - 1) * 10:page * 10]
@@ -157,7 +165,6 @@ class MiscCommands(commands.Cog, name="Misc"):
             lines = message.split("\n")
             await ctx.send("\n".join(lines[:6]))
             await ctx.send("\n".join(lines[6:]))
-
 
     @commands.command()
     async def info(self, ctx):
