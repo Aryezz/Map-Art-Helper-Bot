@@ -113,28 +113,35 @@ class MiscCommands(commands.Cog, name="Misc"):
 
         filters = {arg for arg in args if arg in legal_arguments}
 
-        name_filter = None
+        name_filter = []
         for i in range(len(args) - 1):  # only loop to second last argument, because name still comes after
             if args[i] == "-n":
-                name_filter = args[i + 1].lower()
+                name_filter.append(args[i + 1])
 
+        title_note = []
         maps_to_consider: List[BigMapArt] = self.biggest_maps
 
         # without any filters, the cutoff is 32 individual maps
         # => smaller maps only show up if you explicitly filter
-        if len(filters) == 0:
+        if len(filters) == 0 or len(name_filter) > 0:
             maps_to_consider = list(filter(lambda m: m.total_maps >= 32, maps_to_consider))
 
         if any(f in filters for f in filter_flat_options):
             flat_types: List[str] = ["flat", "dual-layered", "flat + terrain"]
             maps_to_consider = list(filter(lambda m: m.type not in flat_types, maps_to_consider))
+            title_note.append("No flat maps")
 
         if any(f in filters for f in filter_carpet_only_options):
             carpet_only_types: List[str] = ["carpet only", "two-colour", "98.7% carpet"]
             maps_to_consider = list(filter(lambda m: m.palette not in carpet_only_types, maps_to_consider))
+            title_note.append("No carpet-only maps")
+
+        for artist in name_filter:
+            maps_to_consider = list(filter(lambda m: artist.lower() in map(lambda a: a.lower(), m.artists), maps_to_consider))
 
         if name_filter:
-            maps_to_consider = list(filter(lambda m: name_filter in map(lambda a: a.lower(), m.artists), maps_to_consider))
+            name_list = ", ".join(name_filter[:-1]) + " and " + name_filter[-1] if len(name_filter) > 1 else name_filter[0]
+            title_note.append(f"by {name_list}")
 
         max_page = math.ceil(len(maps_to_consider) / 10)
 
@@ -145,7 +152,7 @@ class MiscCommands(commands.Cog, name="Misc"):
         maps = maps_to_consider[(page - 1) * 10:page * 10]
         ranks = {1: "🥇", 2: "🥈", 3: "🥉"}
 
-        message = "# Biggest map-art ever built on 2b2t:\n"
+        message = f"# Biggest map-art ever built on 2b2t{(" (" + ", ".join(title_note) + ")") if title_note else ""}:\n"
 
         for (i, bigmap) in enumerate(maps):
             rank = i + 1 + (page - 1) * 10
