@@ -174,6 +174,16 @@ class MiscCommands(commands.Cog, name="Misc"):
             await ctx.send("\n".join(lines[6:]))
 
     @commands.command()
+    async def mafta(self, ctx):
+        """Info about MAFTA"""
+        message = (
+            "[MAFTA](https://en.wikipedia.org/wiki/North_American_Free_Trade_Agreement) stands for Map Art Free Trade Agreement\n"
+            "Members of the MAFTA give away their maps for free."
+        )
+
+        await ctx.send(message)
+
+    @commands.command()
     async def info(self, ctx):
         """Info about the bot"""
         description = (
