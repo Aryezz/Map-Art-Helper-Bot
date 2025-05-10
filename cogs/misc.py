@@ -177,7 +177,7 @@ class MiscCommands(commands.Cog, name="Misc"):
     async def mafta(self, ctx):
         """Info about MAFTA"""
         message = (
-            "[MAFTA](https://en.wikipedia.org/wiki/North_American_Free_Trade_Agreement) stands for Map Art Free Trade Agreement\n"
+            "[MAFTA](<https://en.wikipedia.org/wiki/North_American_Free_Trade_Agreement>) stands for Map Art Free Trade Agreement\n"
             "Members of the MAFTA give away their maps for free."
         )
 
