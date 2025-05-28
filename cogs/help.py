@@ -248,7 +248,7 @@ class HelpCommands(commands.Cog, name="Help"):
     @commands.command()
     async def glass(self, ctx):
         """Glass on maps"""
-        message = "Glass does not affect maps in any way shape or form, it might as well be air."
+        message = "Glass does not affect maps in any way shape or form, it might as well be air, except for `!!void`."
 
         await ctx.send(message)
 
