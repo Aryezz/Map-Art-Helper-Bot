@@ -189,7 +189,7 @@ class MiscCommands(commands.Cog, name="Misc"):
         description = (
             "Map Art Helper bot made with :heart: by Aryezz#9352\n"
             "Feel free to suggest ideas for improvements / new commands\n"
-            "Source Code: https://gitlab.com/Aryezz/map-art-helper-bot"
+            "Source Code: https://github.com/Aryezz/Map-Art-Helper-Bot"
         )
         url = "https://cdn.discordapp.com/avatars/241663921390485506/a_21562dbefcd6abff27bff9e98a1e317f.gif?size=1024"
         embed = discord.Embed(title="Map Art Helper", description=description, colour=discord.Colour.gold())
