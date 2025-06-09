@@ -34,6 +34,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: aryezz/map-art-helper-bot:latest
-          cache-from: type=registry,ref=aryezz/map-art-helper-bot:latest
+          tags: ghcr.io/aryezz/map-art-helper-bot:latest
+          cache-from: type=registry,ref=ghcr.io/aryezz/map-art-helper-bot:latest
           cache-to: type=inline
