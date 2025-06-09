@@ -51,7 +51,7 @@ class BigMapArt:
 
 class MiscCommands(commands.Cog, name="Misc"):
     """Miscellaneous commands"""
-    big_map_url = "https://gitlab.com/Aryezz/map-art-helper-bot/-/raw/main/map_arts.csv"
+    big_map_url = "https://raw.githubusercontent.com/Aryezz/Map-Art-Helper-Bot/refs/heads/main/map_arts.csv"
 
     def __init__(self, bot):
         self.bot = bot
