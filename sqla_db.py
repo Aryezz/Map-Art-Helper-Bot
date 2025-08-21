@@ -1,9 +1,8 @@
-import asyncio
 import csv
 import enum
 
 import sqlalchemy.ext.asyncio
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import relationship
@@ -177,30 +176,7 @@ class MapArtQueryBuilder:
         self.query = self.query.where(MapArtArchiveEntry.palette == palette)
 
     def add_artist_filter(self, artist: str):
-        self.query = self.query.join(MapArtArchiveEntry.artists).where(MapArtArtist.name == artist)
+        self.query = self.query.join(MapArtArchiveEntry.artists).where(func.lower(MapArtArtist.name) == func.lower(artist))
 
     async def execute(self):
         return (await self.session.execute(self.query)).scalars().all()
-
-
-async def main():
-    engine = create_async_engine(f"sqlite+aiosqlite:///map_art.db")
-    async_session = async_sessionmaker(engine, expire_on_commit=False)
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    await load_data(async_session())
-
-    print(select(MapArtArchiveEntry).where())
-
-    async with async_session() as session:
-        all_maps = (await session.execute(select(MapArtArchiveEntry))).scalars().all()
-
-        print("\n".join(m.name for m in all_maps))
-
-
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
