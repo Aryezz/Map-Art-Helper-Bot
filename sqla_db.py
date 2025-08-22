@@ -26,17 +26,6 @@ class MapArtArtist(Base):
     name = Column(String, unique=True)
     maps = relationship("MapArtArchiveEntry", secondary=artist_mapart, back_populates="artists")
 
-    @classmethod
-    async def get_or_create_artist(cls, session, name: str):
-        result = await session.execute(select(MapArtArtist).where(MapArtArtist.name == name))
-        artist = result.scalar_one_or_none()
-        if artist:
-            return artist
-        artist = MapArtArtist(name=name)
-        session.add(artist)
-        await session.flush()  # Ensures artist_id is populated
-        return artist
-
     def __str__(self):
         return self.name
 
@@ -84,11 +73,15 @@ class MapArtArchiveEntry(Base):
 
     @property
     def artists_str(self):
-        if len(self.artists) == 1:
-            return self.artists[0].name
-
-        artists_str = [a.name for a in self.artists]
-        return ", ".join(artists_str[:-1]) + " and " + artists_str[-1]
+        """Returns a grammatically correct, comma-separated string of artist names."""
+        names = [artist.name for artist in self.artists]
+        if len(names) == 0:
+            return ""
+        if len(names) == 1:
+            return names[0]
+        if len(names) == 2:
+            return f"{names[0]} and {names[1]}"
+        return f"{', '.join(names[:-1])}, and {names[-1]}"
 
     @property
     def line(self):
@@ -120,8 +113,8 @@ async def load_data(session: sqlalchemy.ext.asyncio.AsyncSession):
         filter(lambda line: not line.strip().startswith("#") and not line.strip() == "", data.split("\n")),
         delimiter=';', quotechar='"')
 
-    maps = []
-
+    parsed_entries = []
+    all_artist_names = set()
     for entry in reader:
         width = int(entry[0].strip())
         height = int(entry[1].strip())
@@ -131,23 +124,43 @@ async def load_data(session: sqlalchemy.ext.asyncio.AsyncSession):
         artists = [a.strip() for a in entry[5].split(",")]
         message_id = int(entry[6].strip())
 
-        artists_entities = []
+        parsed_entries.append({
+            "width": width,
+            "height": height,
+            "type": type_mapping.get(map_type, MapArtType.UNKNOWN),
+            "palette": palette_mapping.get(palette, MapArtPalette.UNKNOWN),
+            "name": name,
+            "artists": artists,
+            "message_id": message_id,
+        })
+        all_artist_names.update(artists)
 
-        for artist in artists:
-            a = await MapArtArtist.get_or_create_artist(session, artist)
-            artists_entities.append(a)
+    existing_artists_query = await session.execute(select(MapArtArtist).where(MapArtArtist.name.in_(all_artist_names)))
+    existing_artists = {artist.name: artist for artist in existing_artists_query.scalars()}
 
-        maps.append(MapArtArchiveEntry(
-            width=width,
-            height=height,
-            type=type_mapping.get(map_type, MapArtType.UNKNOWN),
-            palette=palette_mapping.get(palette, MapArtPalette.UNKNOWN),
-            name=name,
-            artists=artists_entities,
-            message_id=message_id,
+    new_artist_names = all_artist_names - set(existing_artists.keys())
+    new_artists = [MapArtArtist(name=name) for name in new_artist_names]
+    session.add_all(new_artists)
+    await session.flush() # Populate IDs for new artists
+
+    artist_map = existing_artists
+    for artist in new_artists:
+        artist_map[artist.name] = artist
+
+    maps_to_create = []
+    for parsed_entry in parsed_entries:
+        artist_entities = [artist_map[name] for name in parsed_entry["artists"]]
+        maps_to_create.append(MapArtArchiveEntry(
+            width="width",
+            height="height",
+            type="type",
+            palette="palette",
+            name="name",
+            artists=artist_entities,
+            message_id=parsed_entry["message_id"],
         ))
 
-    session.add_all(maps)
+    session.add_all(maps_to_create)
     await session.commit()
 
 
@@ -176,7 +189,7 @@ class MapArtQueryBuilder:
         self.query = self.query.where(MapArtArchiveEntry.palette == palette)
 
     def add_artist_filter(self, artist: str):
-        self.query = self.query.join(MapArtArchiveEntry.artists).where(func.lower(MapArtArtist.name) == func.lower(artist))
+        self.query = self.query.join(MapArtArchiveEntry.artists).where(MapArtArtist.name.ilike(artist))
 
     async def execute(self):
         return (await self.session.execute(self.query)).scalars().all()
