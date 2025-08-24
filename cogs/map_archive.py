@@ -1,10 +1,11 @@
+import json
 import math
 from typing import Set
 
 from discord.ext import commands
 from discord.ext.commands import is_owner
 
-
+import ai
 import sqla_db
 from cogs import checks
 
@@ -23,7 +24,21 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         async with sqla_db.Session() as db:
             await db.load_data()
 
-        await ctx.reply("schema created")
+        await ctx.reply("csv loaded")
+
+    @is_owner()
+    @commands.command()
+    async def import_map(self, ctx, msg_id: int):
+        archive_channel = self.bot.get_channel(349277718954901514)
+
+        msg = await archive_channel.fetch_message(msg_id)
+        serialized = ai.serialize_message(msg)
+        processed = await ai.process_message(serialized)
+
+        async with sqla_db.Session() as db:
+            await db.add_maps(processed)
+
+        await ctx.send(f"```{json.dumps(processed, indent=2)}```")
 
     @checks.is_in_bot_stuff()
     @commands.command(aliases=["largest"])

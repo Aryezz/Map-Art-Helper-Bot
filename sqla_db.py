@@ -101,18 +101,19 @@ class Session:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.session.flush()
+        await self.session.commit()
         await self.session.close()
 
     def get_query_builder(self):
         return self.MapArtQueryBuilder(self.session)
 
-    async def load_data(self):
+    async def add_maps(self, maps):
         type_mapping = {
             "flat": MapArtType.FLAT,
             "dual-layered": MapArtType.DUALLAYERED,
             "staircased": MapArtType.STAIRCASED,
-            "semi-staircased": MapArtType.SEMISTAIRCASED
+            "semi-staircased": MapArtType.SEMISTAIRCASED,
+            "unknown": MapArtType.UNKNOWN,
         }
 
         palette_mapping = {
@@ -120,36 +121,13 @@ class Session:
             "two-colour": MapArtPalette.TWOCOLOUR,
             "carpet only": MapArtPalette.CARPETONLY,
             "greyscale": MapArtPalette.GREYSCALE,
+            "unknown": MapArtPalette.UNKNOWN,
         }
 
-        with open("map_arts.csv", "r", encoding="utf-8") as file:
-            data = file.read()
-
-        reader = csv.reader(
-            filter(lambda line: not line.strip().startswith("#") and not line.strip() == "", data.split("\n")),
-            delimiter=';', quotechar='"')
-
-        parsed_entries = []
         all_artist_names = set()
-        for entry in reader:
-            width = int(entry[0].strip())
-            height = int(entry[1].strip())
-            map_type = entry[2].strip()
-            palette = entry[3].strip()
-            name = entry[4].strip()
-            artists = [a.strip() for a in entry[5].split(",")]
-            message_id = int(entry[6].strip())
 
-            parsed_entries.append({
-                "width": width,
-                "height": height,
-                "type": type_mapping.get(map_type, MapArtType.UNKNOWN),
-                "palette": palette_mapping.get(palette, MapArtPalette.UNKNOWN),
-                "name": name,
-                "artists": artists,
-                "message_id": message_id,
-            })
-            all_artist_names.update(artists)
+        for map in maps:
+            all_artist_names.update(map["artists"])
 
         existing_artists_query = await self.session.execute(
             select(MapArtArtist).where(MapArtArtist.name.in_(all_artist_names)))
@@ -165,20 +143,50 @@ class Session:
             artist_map[artist.name] = artist
 
         maps_to_create = []
-        for parsed_entry in parsed_entries:
+        for parsed_entry in maps:
             artist_entities = [artist_map[name] for name in parsed_entry["artists"]]
             maps_to_create.append(MapArtArchiveEntry(
                 width=parsed_entry["width"],
                 height=parsed_entry["height"],
-                type=parsed_entry["type"],
-                palette=parsed_entry["palette"],
+                type=type_mapping.get(parsed_entry["type"], MapArtType.UNKNOWN),
+                palette=palette_mapping.get(parsed_entry["palette"], MapArtPalette.UNKNOWN),
                 name=parsed_entry["name"],
                 artists=artist_entities,
                 message_id=parsed_entry["message_id"],
             ))
 
         self.session.add_all(maps_to_create)
-        await self.session.commit()
+        await self.session.flush()
+
+    async def load_data(self):
+        with open("map_arts.csv", "r", encoding="utf-8") as file:
+            data = file.read()
+
+        reader = csv.reader(
+            filter(lambda line: not line.strip().startswith("#") and not line.strip() == "", data.split("\n")),
+            delimiter=';', quotechar='"')
+
+        parsed_entries = []
+        for entry in reader:
+            width = int(entry[0].strip())
+            height = int(entry[1].strip())
+            map_type = entry[2].strip()
+            palette = entry[3].strip()
+            name = entry[4].strip()
+            artists = [a.strip() for a in entry[5].split(",")]
+            message_id = int(entry[6].strip())
+
+            parsed_entries.append({
+                "width": width,
+                "height": height,
+                "type": map_type,
+                "palette": palette,
+                "name": name,
+                "artists": artists,
+                "message_id": message_id,
+            })
+
+        await self.add_maps(parsed_entries)
 
     class MapArtQueryBuilder:
         def __init__(self, session):
