@@ -13,19 +13,15 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     def __init__(self, bot):
         self.bot = bot
 
-        # DB connection, will be set in cog_load()
-        self.session = None
-
     async def cog_load(self):
-        self.session = await sqla_db.get_session()
-
         # check archive for any new messages not in the DB yet
         pass
 
     @is_owner()
     @commands.command()
     async def load_data(self, ctx):
-        await sqla_db.load_data(self.session)
+        async with sqla_db.Session() as db:
+            await db.load_data()
 
         await ctx.reply("schema created")
 
@@ -64,31 +60,38 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
                 name_filter.append(args[i + 1])
 
         title_note = []
-        query_builder = sqla_db.MapArtQueryBuilder(self.session)
 
-        # without any filters, the cutoff is 32 individual maps
-        # => smaller maps only show up if you explicitly filter
-        if len(filters) == 0 or len(name_filter) > 0:
-            query_builder.add_size_filter(32)
+        async with sqla_db.Session() as db:
+            query_builder = db.get_query_builder()
 
-        if any(f in filters for f in filter_flat_options):
-            query_builder.add_size_filter(8)
-            query_builder.add_type_filter(sqla_db.MapArtType.FLAT)
-            title_note.append("No flat maps")
+            # without any filters, the cutoff is 32 individual maps
+            # => smaller maps only show up if you explicitly filter
+            min_size = 32
 
-        if any(f in filters for f in filter_carpet_only_options):
-            query_builder.add_size_filter(32)
-            query_builder.add_palette_filter(sqla_db.MapArtPalette.CARPETONLY)
-            title_note.append("No carpet-only maps")
+            if any(f in filters for f in filter_flat_options):
+                # when filtering for non-flat maps, the default cutoff is 8 maps
+                min_size = min(min_size, 8)
+                query_builder.add_type_filter(sqla_db.MapArtType.FLAT)
+                title_note.append("No flat maps")
 
-        for artist in name_filter:
-            query_builder.add_artist_filter(artist)
+            if any(f in filters for f in filter_carpet_only_options):
+                query_builder.add_palette_filter(sqla_db.MapArtPalette.CARPETONLY)
+                title_note.append("No carpet-only maps")
 
-        if name_filter:
-            name_list = ", ".join(name_filter[:-1]) + " and " + name_filter[-1] if len(name_filter) > 1 else name_filter[0]
-            title_note.append(f"by {name_list}")
+            for artist in name_filter:
+                query_builder.add_artist_filter(artist)
 
-        found_maps = await query_builder.execute()
+            if name_filter:
+                # when filtering by artist, there is no minimum size
+                min_size = min(min_size, 0)
+                name_list = ", ".join(name_filter[:-1]) + " and " + name_filter[-1] if len(name_filter) > 1 else name_filter[0]
+                title_note.append(f"by {name_list}")
+
+            query_builder.add_size_filter(min_size)
+
+            print(query_builder.query)
+
+            found_maps = await query_builder.execute()
 
         max_page = math.ceil(len(found_maps) / 10)
 
@@ -102,8 +105,6 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         message = f"# Biggest map-art ever built on 2b2t{(" (" + ", ".join(title_note) + ")") if title_note else ""}:\n"
 
         for (i, bigmap) in enumerate(maps):
-            await self.session.refresh(bigmap)
-
             rank = i + 1 + (page - 1) * 10
             message += f"**{ranks.get(rank, f'{rank}:')}** {bigmap.line}\n"
 
@@ -121,7 +122,6 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             lines = message.split("\n")
             await ctx.send("\n".join(lines[:6]))
             await ctx.send("\n".join(lines[6:]))
-
 
 
 async def setup(client):

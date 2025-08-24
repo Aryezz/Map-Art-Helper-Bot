@@ -1,8 +1,7 @@
 import csv
 import enum
 
-import sqlalchemy.ext.asyncio
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import relationship
@@ -91,105 +90,112 @@ class MapArtArchiveEntry(Base):
         return size_info + " - " + extra_info
 
 
-async def load_data(session: sqlalchemy.ext.asyncio.AsyncSession):
-    type_mapping = {
-        "flat": MapArtType.FLAT,
-        "dual-layered": MapArtType.DUALLAYERED,
-        "staircased": MapArtType.STAIRCASED,
-        "semi-staircased": MapArtType.SEMISTAIRCASED
-    }
+class Session:
+    async def __aenter__(self):
+        engine = create_async_engine(f"sqlite+aiosqlite:///map_art.db")
+        self.session = async_sessionmaker(engine, expire_on_commit=False)()
 
-    palette_mapping = {
-        "full colour": MapArtPalette.FULLCOLOUR,
-        "two-colour": MapArtPalette.TWOCOLOUR,
-        "carpet only": MapArtPalette.CARPETONLY,
-        "greyscale": MapArtPalette.GREYSCALE,
-    }
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
-    with open("map_arts.csv", "r", encoding="utf-8") as file:
-        data = file.read()
+        return self
 
-    reader = csv.reader(
-        filter(lambda line: not line.strip().startswith("#") and not line.strip() == "", data.split("\n")),
-        delimiter=';', quotechar='"')
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.session.flush()
+        await self.session.close()
 
-    parsed_entries = []
-    all_artist_names = set()
-    for entry in reader:
-        width = int(entry[0].strip())
-        height = int(entry[1].strip())
-        map_type = entry[2].strip()
-        palette = entry[3].strip()
-        name = entry[4].strip()
-        artists = [a.strip() for a in entry[5].split(",")]
-        message_id = int(entry[6].strip())
+    def get_query_builder(self):
+        return self.MapArtQueryBuilder(self.session)
 
-        parsed_entries.append({
-            "width": width,
-            "height": height,
-            "type": type_mapping.get(map_type, MapArtType.UNKNOWN),
-            "palette": palette_mapping.get(palette, MapArtPalette.UNKNOWN),
-            "name": name,
-            "artists": artists,
-            "message_id": message_id,
-        })
-        all_artist_names.update(artists)
+    async def load_data(self):
+        type_mapping = {
+            "flat": MapArtType.FLAT,
+            "dual-layered": MapArtType.DUALLAYERED,
+            "staircased": MapArtType.STAIRCASED,
+            "semi-staircased": MapArtType.SEMISTAIRCASED
+        }
 
-    existing_artists_query = await session.execute(select(MapArtArtist).where(MapArtArtist.name.in_(all_artist_names)))
-    existing_artists = {artist.name: artist for artist in existing_artists_query.scalars()}
+        palette_mapping = {
+            "full colour": MapArtPalette.FULLCOLOUR,
+            "two-colour": MapArtPalette.TWOCOLOUR,
+            "carpet only": MapArtPalette.CARPETONLY,
+            "greyscale": MapArtPalette.GREYSCALE,
+        }
 
-    new_artist_names = all_artist_names - set(existing_artists.keys())
-    new_artists = [MapArtArtist(name=name) for name in new_artist_names]
-    session.add_all(new_artists)
-    await session.flush() # Populate IDs for new artists
+        with open("map_arts.csv", "r", encoding="utf-8") as file:
+            data = file.read()
 
-    artist_map = existing_artists
-    for artist in new_artists:
-        artist_map[artist.name] = artist
+        reader = csv.reader(
+            filter(lambda line: not line.strip().startswith("#") and not line.strip() == "", data.split("\n")),
+            delimiter=';', quotechar='"')
 
-    maps_to_create = []
-    for parsed_entry in parsed_entries:
-        artist_entities = [artist_map[name] for name in parsed_entry["artists"]]
-        maps_to_create.append(MapArtArchiveEntry(
-            width="width",
-            height="height",
-            type="type",
-            palette="palette",
-            name="name",
-            artists=artist_entities,
-            message_id=parsed_entry["message_id"],
-        ))
+        parsed_entries = []
+        all_artist_names = set()
+        for entry in reader:
+            width = int(entry[0].strip())
+            height = int(entry[1].strip())
+            map_type = entry[2].strip()
+            palette = entry[3].strip()
+            name = entry[4].strip()
+            artists = [a.strip() for a in entry[5].split(",")]
+            message_id = int(entry[6].strip())
 
-    session.add_all(maps_to_create)
-    await session.commit()
+            parsed_entries.append({
+                "width": width,
+                "height": height,
+                "type": type_mapping.get(map_type, MapArtType.UNKNOWN),
+                "palette": palette_mapping.get(palette, MapArtPalette.UNKNOWN),
+                "name": name,
+                "artists": artists,
+                "message_id": message_id,
+            })
+            all_artist_names.update(artists)
 
+        existing_artists_query = await self.session.execute(
+            select(MapArtArtist).where(MapArtArtist.name.in_(all_artist_names)))
+        existing_artists = {artist.name: artist for artist in existing_artists_query.scalars()}
 
-async def get_session():
-    engine = create_async_engine(f"sqlite+aiosqlite:///map_art.db")
-    async_session = async_sessionmaker(engine, expire_on_commit=False)
+        new_artist_names = all_artist_names - set(existing_artists.keys())
+        new_artists = [MapArtArtist(name=name) for name in new_artist_names]
+        self.session.add_all(new_artists)
+        await self.session.flush()  # Populate IDs for new artists
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        artist_map = existing_artists
+        for artist in new_artists:
+            artist_map[artist.name] = artist
 
-    return async_session()
+        maps_to_create = []
+        for parsed_entry in parsed_entries:
+            artist_entities = [artist_map[name] for name in parsed_entry["artists"]]
+            maps_to_create.append(MapArtArchiveEntry(
+                width=parsed_entry["width"],
+                height=parsed_entry["height"],
+                type=parsed_entry["type"],
+                palette=parsed_entry["palette"],
+                name=parsed_entry["name"],
+                artists=artist_entities,
+                message_id=parsed_entry["message_id"],
+            ))
 
+        self.session.add_all(maps_to_create)
+        await self.session.commit()
 
-class MapArtQueryBuilder:
-    def __init__(self, session):
-        self.session: sqlalchemy.ext.asyncio.AsyncSession = session
-        self.query = select(MapArtArchiveEntry).order_by(desc(MapArtArchiveEntry.width * MapArtArchiveEntry.height))
+    class MapArtQueryBuilder:
+        def __init__(self, session):
+            self.session = session
+            self.query = select(MapArtArchiveEntry).order_by(desc(MapArtArchiveEntry.width * MapArtArchiveEntry.height))
 
-    def add_size_filter(self, min_size):
-        self.query = self.query.where(MapArtArchiveEntry.width * MapArtArchiveEntry.height >= min_size)
+        def add_size_filter(self, min_size):
+            self.query = self.query.where(MapArtArchiveEntry.width * MapArtArchiveEntry.height >= min_size)
 
-    def add_type_filter(self, type: MapArtType):
-        self.query = self.query.where(MapArtArchiveEntry.type == type)
+        def add_type_filter(self, type: MapArtType):
+            self.query = self.query.where(MapArtArchiveEntry.type == type)
 
-    def add_palette_filter(self, palette: MapArtPalette):
-        self.query = self.query.where(MapArtArchiveEntry.palette == palette)
+        def add_palette_filter(self, palette: MapArtPalette):
+            self.query = self.query.where(MapArtArchiveEntry.palette == palette)
 
-    def add_artist_filter(self, artist: str):
-        self.query = self.query.join(MapArtArchiveEntry.artists).where(MapArtArtist.name.ilike(artist))
+        def add_artist_filter(self, artist: str):
+            self.query = self.query.join(MapArtArchiveEntry.artists).where(MapArtArtist.name.ilike(artist))
 
-    async def execute(self):
-        return (await self.session.execute(self.query)).scalars().all()
+        async def execute(self):
+            return (await self.session.execute(self.query)).scalars().all()
