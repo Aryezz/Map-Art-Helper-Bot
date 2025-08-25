@@ -1,3 +1,4 @@
+import io
 import json
 import math
 from typing import Set
@@ -38,6 +39,26 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             await db.add_maps(processed)
 
         await ctx.send(f"```{json.dumps(processed, indent=2)}```")
+
+    @is_owner()
+    @commands.command()
+    async def search(self, ctx, *search_terms):
+        async with sqla_db.Session() as db:
+            query_builder = db.get_query_builder()
+
+            for term in search_terms:
+                query_builder.add_search_filter(term)
+
+            results = await query_builder.execute()
+
+        json_data = [map_art.json for map_art in results]
+        json_output = json.dumps(json_data, indent=2)
+
+        if len(json_output) + 6 > 2000:
+            file = io.StringIO(json_output)
+            await ctx.send(file=discord.File(file, "results.txt"))
+        else:
+            await ctx.send(f"```{json_output}```")
 
     @tasks.loop(minutes=5)
     async def update_archive(self):

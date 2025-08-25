@@ -2,11 +2,10 @@ import csv
 import enum
 import logging
 
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import relationship
-
 
 logger = logging.getLogger("discord.db")
 
@@ -65,6 +64,19 @@ class MapArtArchiveEntry(Base):
     name = Column(String)
     artists = relationship("MapArtArtist", secondary=artist_mapart, back_populates="maps", lazy="selectin")
     message_id = Column(Integer)
+
+    @property
+    def json(self):
+        return {
+            "map_id": self.map_id,
+            "width": self.width,
+            "height": self.height,
+            "type": self.type.name,
+            "palette": self.palette.name,
+            "name": self.name,
+            "artists": [artist.name for artist in self.artists],
+            "message_id": self.message_id,
+        }
 
     @property
     def total_maps(self):
@@ -214,6 +226,17 @@ class Session:
 
         def add_artist_filter(self, artist: str):
             self.query = self.query.join(MapArtArchiveEntry.artists).where(MapArtArtist.name.ilike(artist))
+
+        def add_search_filter(self, search_term: str):
+            self.query = (self.query
+                .join(MapArtArchiveEntry.artists)
+                .where(or_(
+                    MapArtArchiveEntry.name.contains(search_term),
+                    MapArtArtist.name.ilike(search_term),
+                    MapArtArchiveEntry.palette.ilike(search_term),
+                    MapArtArchiveEntry.type.ilike(search_term),
+                ))
+            )
 
         async def execute(self):
             return (await self.session.execute(self.query)).scalars().all()
