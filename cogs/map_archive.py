@@ -32,8 +32,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         archive_channel = self.bot.get_channel(349277718954901514)
 
         msg = await archive_channel.fetch_message(msg_id)
-        serialized = ai.serialize_message(msg)
-        processed = await ai.process_message(serialized)
+        processed = await ai.process_message([msg])
 
         async with sqla_db.Session() as db:
             await db.add_maps(processed)

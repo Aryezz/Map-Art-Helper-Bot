@@ -1,29 +1,32 @@
 import json
 import os
+from typing import List
 
 import discord
 from google import genai
 from google.genai import types
 
 
-def serialize_message(msg: discord.Message):
+def serialize_message(message: discord.Message):
     msg_dict = {
-        "author": msg.author.name,
-        "author_nick": msg.author.nick,
-        "author_id": msg.author.id,
-        "content": msg.content,
-        "id": msg.id,
-        # TODO: it would probably make more sense to add the message id manually afterwards instead of having the LLM do it
-        "mentions": [{"name": m.name, "nick": m.nick, "id": m.id} for m in msg.mentions],
+        "author": message.author.name,
+        "author_nick": message.author.nick,
+        "author_id": message.author.id,
+        "content": message.content,
+        "message_id": message.id,
+        "mentions": [{"name": m.name, "nick": m.nick, "id": m.id} for m in message.mentions],
+        "attachments": [a.url for a in message.attachments]
     }
 
     return msg_dict
 
 
-async def process_message(message):
+async def process_message(messages: List[discord.Message]):
     client = genai.Client(
         api_key=os.environ.get("GEMINI_API_KEY"),
     )
+
+    message_dicts = [serialize_message(message) for message in messages]
 
     model = "gemini-2.5-flash-lite"
     contents = [
@@ -31,8 +34,14 @@ async def process_message(message):
             role="user",
             parts=[
                 types.Part.from_text(
-                    text="Process the following serialized Discord message to extract info. The message describes a Minecraft map art and contains some structured properties. If the message contains user mentions, use the mentions to evaluate which users are mentioned where.\n\n" + json.dumps(
-                        message)),
+                    text=(
+                        "Process the following serialized Discord message to extract info. "
+                        "The message describes a Minecraft map art and contains some structured properties. "
+                        "If the message contains user mentions, use the mentions to evaluate which users are mentioned where. "
+                        "If there are references to original artists or people preprocessing the image, you can ignore those, and just return the builders/printers/mappers as the artists. "
+                        "In rare cases, multiple consecutive messages relate to a single map art entry, in those cases, use the message id of the message containing an image attachment.\n\n"
+                    ) + json.dumps(message_dicts)
+                ),
             ],
         ),
     ]
@@ -89,6 +98,8 @@ async def process_message(message):
         contents=contents,
         config=generate_content_config,
     )
+
+    print(response.usage_metadata)
 
     map_list = response.parsed["map_arts"]
     return map_list
