@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from typing import List
 
@@ -7,21 +8,33 @@ from google import genai
 from google.genai import types
 
 
+logger = logging.getLogger("discord.gemini")
+
+
 def serialize_message(message: discord.Message):
     msg_dict = {
-        "author": message.author.name,
-        "author_nick": message.author.nick,
+        "author": message.author.global_name,
         "author_id": message.author.id,
         "content": message.content,
         "message_id": message.id,
-        "mentions": [{"name": m.name, "nick": m.nick, "id": m.id} for m in message.mentions],
         "attachments": [a.url for a in message.attachments]
     }
+
+    if isinstance(message.author, discord.Member):
+        msg_dict["author_nick"] = message.author.nick
+
+    mentions = []
+
+    for mention in message.mentions:
+        if isinstance(mention, discord.Member):
+            mentions.append({"name": mention.global_name, "nick": mention.nick, "id": mention.id})
+
+    msg_dict["mentions"] = mentions
 
     return msg_dict
 
 
-async def process_message(messages: List[discord.Message]):
+async def process_messages(messages: List[discord.Message]):
     client = genai.Client(
         api_key=os.environ.get("GEMINI_API_KEY"),
     )
@@ -35,10 +48,12 @@ async def process_message(messages: List[discord.Message]):
             parts=[
                 types.Part.from_text(
                     text=(
-                        "Process the following serialized Discord message to extract info. "
-                        "The message describes a Minecraft map art and contains some structured properties. "
+                        "Process the following serialized Discord messages to extract info. "
+                        "The messages describe Minecraft map arts and contain some structured properties. "
                         "If the message contains user mentions, use the mentions to evaluate which users are mentioned where. "
                         "If there are references to original artists or people preprocessing the image, you can ignore those, and just return the builders/printers/mappers as the artists. "
+                        "If no size is provided, you can assume 1x1. For all sizes you can assume width comes before height. "
+                        "If no name is not provided, try to extract a suitable name from the attachment url, if the url contains no suitable name, use the name \"unknown\". "
                         "In rare cases, multiple consecutive messages relate to a single map art entry, in those cases, use the message id of the message containing an image attachment.\n\n"
                     ) + json.dumps(message_dicts)
                 ),
@@ -99,7 +114,7 @@ async def process_message(messages: List[discord.Message]):
         config=generate_content_config,
     )
 
-    print(response.usage_metadata)
+    logger.info(f"processed {len(messages)} message(s), used {response.usage_metadata.total_token_count} tokens")
 
     map_list = response.parsed["map_arts"]
     return map_list

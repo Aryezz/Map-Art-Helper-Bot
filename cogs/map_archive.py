@@ -2,7 +2,8 @@ import json
 import math
 from typing import Set
 
-from discord.ext import commands
+import discord
+from discord.ext import commands, tasks
 from discord.ext.commands import is_owner
 
 import ai
@@ -12,11 +13,12 @@ from cogs import checks
 
 class MapArchiveCommands(commands.Cog, name="Map Archive"):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: discord.Client = bot
+        self.archive_channel: discord.TextChannel = self.bot.get_channel(349277718954901514)
+        self.update_archive.start()
 
-    async def cog_load(self):
-        # check archive for any new messages not in the DB yet
-        pass
+    def cog_unload(self):
+        self.update_archive.cancel()
 
     @is_owner()
     @commands.command()
@@ -29,15 +31,34 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     @is_owner()
     @commands.command()
     async def import_map(self, ctx, msg_id: int):
-        archive_channel = self.bot.get_channel(349277718954901514)
-
-        msg = await archive_channel.fetch_message(msg_id)
-        processed = await ai.process_message([msg])
+        msg = await self.archive_channel.fetch_message(msg_id)
+        processed = await ai.process_messages([msg])
 
         async with sqla_db.Session() as db:
             await db.add_maps(processed)
 
         await ctx.send(f"```{json.dumps(processed, indent=2)}```")
+
+    @tasks.loop(minutes=5)
+    async def update_archive(self):
+        async with sqla_db.Session() as db:
+            latest_entry_message = await db.get_latest_message_id()
+
+        if latest_entry_message is not None:
+            latest_message = await self.archive_channel.fetch_message(latest_entry_message)
+            fetch_from_timestamp = latest_message.created_at
+            messages = [message async for message in self.archive_channel.history(limit=50, after=fetch_from_timestamp, oldest_first=True)]
+        else:
+            messages = [message async for message in self.archive_channel.history(limit=50, oldest_first=True)]
+
+        processed = await ai.process_messages(messages)
+
+        async with sqla_db.Session() as db:
+            await db.add_maps(processed)
+
+    @update_archive.before_loop
+    async def before_updating_archive(self):
+        await self.bot.wait_until_ready()
 
     @checks.is_in_bot_stuff()
     @commands.command(aliases=["largest"])

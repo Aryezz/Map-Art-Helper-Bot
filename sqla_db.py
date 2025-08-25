@@ -1,10 +1,14 @@
 import csv
 import enum
+import logging
 
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import relationship
+
+
+logger = logging.getLogger("discord.db")
 
 
 class Base(DeclarativeBase):
@@ -107,6 +111,9 @@ class Session:
     def get_query_builder(self):
         return self.MapArtQueryBuilder(self.session)
 
+    async def get_latest_message_id(self):
+        return (await self.session.execute(select(func.max(MapArtArchiveEntry.message_id)))).scalar()
+
     async def add_maps(self, maps):
         type_mapping = {
             "flat": MapArtType.FLAT,
@@ -156,6 +163,9 @@ class Session:
             ))
 
         self.session.add_all(maps_to_create)
+
+        logger.info(f"added {len(new_artists)} artists and {len(maps_to_create)} maps")
+
         await self.session.flush()
 
     async def load_data(self):
