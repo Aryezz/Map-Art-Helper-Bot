@@ -51,6 +51,9 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         else:
             messages = [message async for message in self.archive_channel.history(limit=50, oldest_first=True)]
 
+        if len(messages) == 0:
+            return
+
         processed = await ai.process_messages(messages)
 
         async with sqla_db.Session() as db:

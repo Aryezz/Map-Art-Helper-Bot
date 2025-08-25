@@ -5,8 +5,8 @@ from typing import List
 
 import discord
 from google import genai
-from google.genai import types
-
+from google.genai import types, errors
+from google.genai.errors import APIError
 
 logger = logging.getLogger("discord.gemini")
 
@@ -108,13 +108,17 @@ async def process_messages(messages: List[discord.Message]):
         ),
     )
 
-    response = await client.aio.models.generate_content(
-        model=model,
-        contents=contents,
-        config=generate_content_config,
-    )
+    try:
+        response = await client.aio.models.generate_content(
+            model=model,
+            contents=contents,
+            config=generate_content_config,
+        )
 
-    logger.info(f"processed {len(messages)} message(s), used {response.usage_metadata.total_token_count} tokens")
+        logger.info(f"processed {len(messages)} message(s), used {response.usage_metadata.total_token_count} tokens")
 
-    map_list = response.parsed["map_arts"]
-    return map_list
+        map_list = response.parsed["map_arts"]
+        return map_list
+    except errors.APIError as e:
+        logger.error(f"Error Code {e.code} while processing")
+        logger.error(e.message)
