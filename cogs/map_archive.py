@@ -104,8 +104,6 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
             query_builder.add_size_filter(min_size)
 
-            print(query_builder.query)
-
             found_maps = await query_builder.execute()
 
         max_page = math.ceil(len(found_maps) / 10)

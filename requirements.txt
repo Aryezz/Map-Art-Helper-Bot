@@ -2,4 +2,4 @@ aiosqlite==0.21.0
 discord.py==2.6
 humanize==4.12.3
 sqlalchemy[asyncio]==2.0.43
-aiohttp==3.10.1
+google-genai==1.31.0
