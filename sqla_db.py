@@ -2,6 +2,7 @@ import csv
 import enum
 import logging
 
+import sqlalchemy.ext.asyncio
 from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_, update
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
@@ -230,7 +231,7 @@ class Session:
 
     class MapArtQueryBuilder:
         def __init__(self, session):
-            self.session = session
+            self.session: sqlalchemy.ext.asyncio.AsyncSession = session
             self.query = select(MapArtArchiveEntry).order_by(desc(MapArtArchiveEntry.width * MapArtArchiveEntry.height))
 
         def add_size_filter(self, min_size):
@@ -253,8 +254,8 @@ class Session:
                 MapArtArtist.name.ilike(search_term),
                 MapArtArchiveEntry.palette.ilike(search_term),
                 MapArtArchiveEntry.type.ilike(search_term),
-            ))
-            )
+                MapArtArchiveEntry.message_id == search_term
+            )))
 
         async def execute(self):
-            return (await self.session.execute(self.query)).scalars().all()
+            return (await self.session.execute(self.query)).scalars().unique().all()
