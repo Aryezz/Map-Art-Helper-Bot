@@ -4,6 +4,7 @@ import math
 from typing import Set
 
 import discord
+from discord.app_commands.checks import has_role
 from discord.ext import commands, tasks
 from discord.ext.commands import is_owner
 
@@ -40,7 +41,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
         await ctx.send(f"```{json.dumps(processed, indent=2)}```")
 
-    @is_owner()
+    @has_role("staff")
     @commands.command()
     async def search(self, ctx, *search_terms):
         async with sqla_db.Session() as db:
@@ -60,7 +61,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         else:
             await ctx.send(f"```{json_output}```")
 
-    @is_owner()
+    @has_role("staff")
     @commands.command()
     async def update(self, ctx, *, map_entries: str):
         map_entries = map_entries.strip("`\n")
