@@ -2,7 +2,7 @@ import csv
 import enum
 import logging
 
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_, update
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import relationship
@@ -127,22 +127,6 @@ class Session:
         return (await self.session.execute(select(func.max(MapArtArchiveEntry.message_id)))).scalar()
 
     async def add_maps(self, maps):
-        type_mapping = {
-            "flat": MapArtType.FLAT,
-            "dual-layered": MapArtType.DUALLAYERED,
-            "staircased": MapArtType.STAIRCASED,
-            "semi-staircased": MapArtType.SEMISTAIRCASED,
-            "unknown": MapArtType.UNKNOWN,
-        }
-
-        palette_mapping = {
-            "full colour": MapArtPalette.FULLCOLOUR,
-            "two-colour": MapArtPalette.TWOCOLOUR,
-            "carpet only": MapArtPalette.CARPETONLY,
-            "greyscale": MapArtPalette.GREYSCALE,
-            "unknown": MapArtPalette.UNKNOWN,
-        }
-
         all_artist_names = set()
 
         for map in maps:
@@ -164,17 +148,44 @@ class Session:
         maps_to_create = []
         for parsed_entry in maps:
             artist_entities = [artist_map[name] for name in parsed_entry["artists"]]
-            maps_to_create.append(MapArtArchiveEntry(
-                width=parsed_entry["width"],
-                height=parsed_entry["height"],
-                type=type_mapping.get(parsed_entry["type"], MapArtType.UNKNOWN),
-                palette=palette_mapping.get(parsed_entry["palette"], MapArtPalette.UNKNOWN),
-                name=parsed_entry["name"],
-                artists=artist_entities,
-                message_id=parsed_entry["message_id"],
-            ))
 
-        self.session.add_all(maps_to_create)
+            map_type = MapArtType.UNKNOWN
+            if parsed_entry["type"] in MapArtType:
+                map_type = MapArtType(parsed_entry["type"])
+            elif parsed_entry["type"] in MapArtType.__members__:
+                map_type = MapArtType[parsed_entry["type"]]
+
+            map_palette = MapArtPalette.UNKNOWN
+            if parsed_entry["palette"] in MapArtPalette:
+                map_palette = MapArtPalette(parsed_entry["palette"])
+            elif parsed_entry["palette"] in MapArtPalette.__members__:
+                map_palette = MapArtPalette[parsed_entry["palette"]]
+
+            if "map_id" in parsed_entry:
+                select_query = select(MapArtArchiveEntry).where(MapArtArchiveEntry.map_id == parsed_entry["map_id"])
+                db_entry = (await self.session.execute(select_query)).scalars().first()
+                db_entry.width=parsed_entry["width"]
+                db_entry.height=parsed_entry["height"]
+                db_entry.type=map_type
+                db_entry.palette=map_palette
+                db_entry.name=parsed_entry["name"]
+                db_entry.artists=artist_entities
+                db_entry.message_id=parsed_entry["message_id"]
+
+                logger.info(f"updated map {parsed_entry['name']} with id {parsed_entry['map_id']}")
+            else:
+                maps_to_create.append(MapArtArchiveEntry(
+                    width=parsed_entry["width"],
+                    height=parsed_entry["height"],
+                    type=map_type,
+                    palette=map_palette,
+                    name=parsed_entry["name"],
+                    artists=artist_entities,
+                    message_id=parsed_entry["message_id"],
+                ))
+
+        if len(maps_to_create) > 0:
+            self.session.add_all(maps_to_create)
 
         logger.info(f"added {len(new_artists)} artists and {len(maps_to_create)} maps")
 
@@ -229,13 +240,13 @@ class Session:
 
         def add_search_filter(self, search_term: str):
             self.query = (self.query
-                .join(MapArtArchiveEntry.artists)
-                .where(or_(
-                    MapArtArchiveEntry.name.contains(search_term),
-                    MapArtArtist.name.ilike(search_term),
-                    MapArtArchiveEntry.palette.ilike(search_term),
-                    MapArtArchiveEntry.type.ilike(search_term),
-                ))
+            .join(MapArtArchiveEntry.artists)
+            .where(or_(
+                MapArtArchiveEntry.name.contains(search_term),
+                MapArtArtist.name.ilike(search_term),
+                MapArtArchiveEntry.palette.ilike(search_term),
+                MapArtArchiveEntry.type.ilike(search_term),
+            ))
             )
 
         async def execute(self):

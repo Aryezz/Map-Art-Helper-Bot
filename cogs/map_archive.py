@@ -60,6 +60,19 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         else:
             await ctx.send(f"```{json_output}```")
 
+    @is_owner()
+    @commands.command()
+    async def update(self, ctx, *, map_entries: str):
+        map_entries = map_entries.strip("`\n")
+
+        entries = json.loads(map_entries)
+
+        async with sqla_db.Session() as db:
+            await db.add_maps(entries)
+
+        await ctx.send("done")
+
+
     @tasks.loop(minutes=5)
     async def update_archive(self):
         async with sqla_db.Session() as db:
