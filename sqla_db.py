@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import relationship
 
+import config
+
 logger = logging.getLogger("discord.db")
 
 
@@ -84,7 +86,7 @@ class MapArtArchiveEntry(Base):
 
     @property
     def link(self):
-        return "https://discord.com/channels/349201680023289867/349277718954901514/" + str(self.message_id)
+        return f"https://discord.com/channels/{config.map_artists_guild_id}/{config.map_archive_channel_id}/{self.message_id}"
 
     @property
     def artists_str(self):

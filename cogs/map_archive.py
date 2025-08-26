@@ -9,6 +9,7 @@ from discord.ext import commands, tasks
 from discord.ext.commands import is_owner
 
 import ai
+import config
 import sqla_db
 from cogs import checks
 
@@ -16,7 +17,7 @@ from cogs import checks
 class MapArchiveCommands(commands.Cog, name="Map Archive"):
     def __init__(self, bot):
         self.bot: discord.Client = bot
-        self.archive_channel: discord.TextChannel = self.bot.get_channel(349277718954901514)
+        self.archive_channel: discord.TextChannel = self.bot.get_channel(config.map_archive_channel_id)
         self.update_archive.start()
 
     def cog_unload(self):
