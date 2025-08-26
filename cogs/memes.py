@@ -7,7 +7,7 @@ import humanize
 
 
 class MemeCommands(commands.Cog, name="Memes"):
-    """Pretty self explanatory, is it not?"""
+    """Pretty self-explanatory, is it not?"""
     def __init__(self, bot):
         self.bot = bot
         if not hasattr(self.bot, "yqe_message_count"):
@@ -29,11 +29,9 @@ class MemeCommands(commands.Cog, name="Memes"):
         if message.author.id == self.golden_user_id:
             await message.add_reaction("🇦🇿")
 
-        #if (
-        #    re.search(r"\bFit(MC)?\b", message.content, flags=re.IGNORECASE) and
-        #    message.channel.id not in self.bot.config.channel_blacklist
-        #):
-        #    await (await self.bot.get_context(message)).invoke(self.bot.get_command("fit"))
+    @commands.command(hidden=True)
+    async def smallest(self, ctx):
+        await ctx.send(f"{ctx.author.global_name} pp")
 
     @commands.command(hidden=True)
     async def yqe(self, ctx):
