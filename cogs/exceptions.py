@@ -46,9 +46,8 @@ class CommandErrorHandler(commands.Cog):
                 await ctx.reply("Arguments could not be parsed, check format")
             case commands.DisabledCommand():
                 await ctx.reply("This command is currently disabled")
-            case checks.BotStuffOnly():
-                # FIXME: hardcoded channel ID
-                await ctx.reply("This command only works in <#402917135225192458>")
+            case checks.BotChannelsOnly():
+                await ctx.reply("This command only works in bot channels (channels starting with `bot-`)")
             case commands.CheckFailure():
                 await ctx.reply("A check for this command failed")
             case _:

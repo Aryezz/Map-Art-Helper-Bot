@@ -97,7 +97,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     async def before_updating_archive(self):
         await self.bot.wait_until_ready()
 
-    @checks.is_in_bot_stuff()
+    @checks.is_in_bot_channel()
     @commands.command(aliases=["largest"])
     async def biggest(self, ctx, *args):
         """The biggest map art on 2b2t
