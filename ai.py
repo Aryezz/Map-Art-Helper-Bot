@@ -132,8 +132,10 @@ async def process_messages(messages: List[discord.Message]):
 
         logger.info(f"processed {len(messages)} message(s), used {response.usage_metadata.total_token_count} tokens")
 
-        if "map_arts" in response.parsed:
-            map_list = response.parsed["map_arts"]
+        response_parsed = json.loads(response.text)
+
+        if "map_arts" in response_parsed:
+            map_list = response_parsed["map_arts"]
             return map_list
         else:
             logger.error("response did not contain key map_arts, returning empty list")
