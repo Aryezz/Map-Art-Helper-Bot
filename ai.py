@@ -1,11 +1,12 @@
 import json
 import logging
-import os
 from typing import List
 
 import discord
 from google import genai
 from google.genai import types, errors
+
+import config
 
 logger = logging.getLogger("discord.gemini")
 
@@ -36,7 +37,7 @@ def serialize_message(message: discord.Message):
 
 async def process_messages(messages: List[discord.Message]):
     client = genai.Client(
-        api_key=os.environ.get("GEMINI_API_KEY"),
+        api_key=config.gemini_token,
     )
 
     message_dicts = [serialize_message(message) for message in messages]
