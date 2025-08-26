@@ -17,3 +17,4 @@ The following environment variables can be configured
 * `GUILD` Discord Guild ID (default: `349201680023289867`, the Map Artists of 2b2t Guild)
 * `ARCHIVE` Discord channel ID (default: `349277718954901514`, the map-archive channel in the guild)
 * `BLACKLIST` List of Discord channel IDs where commands are ignored (default: `[]`)
+* `BOT_LOG` Discord channel ID (default: `1409872078508920872`, the bot-log channel in the guild)

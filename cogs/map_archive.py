@@ -18,6 +18,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self.archive_channel: discord.TextChannel = self.bot.get_channel(config.map_archive_channel_id)
+        self.bot_log_channel: discord.TextChannel = self.bot.get_channel(config.bot_log_channel_id)
         self.update_archive.start()
 
     def cog_unload(self):
@@ -86,6 +87,8 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
         async with sqla_db.Session() as db:
             await db.add_maps(processed)
+
+        await self.bot_log_channel.send(f"processed {len(messages)} messages, added {len(processed)} maps")
 
     @update_archive.before_loop
     async def before_updating_archive(self):
