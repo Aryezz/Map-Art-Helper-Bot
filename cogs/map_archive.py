@@ -25,14 +25,6 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
     @is_owner()
     @commands.command()
-    async def load_data(self, ctx):
-        async with sqla_db.Session() as db:
-            await db.load_data()
-
-        await ctx.reply("csv loaded")
-
-    @is_owner()
-    @commands.command()
     async def import_map(self, ctx, msg_id: int):
         msg = await self.archive_channel.fetch_message(msg_id)
         processed = await ai.process_messages([msg])

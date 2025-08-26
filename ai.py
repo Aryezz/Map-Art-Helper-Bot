@@ -6,7 +6,6 @@ from typing import List
 import discord
 from google import genai
 from google.genai import types, errors
-from google.genai.errors import APIError
 
 logger = logging.getLogger("discord.gemini")
 
@@ -17,7 +16,8 @@ def serialize_message(message: discord.Message):
         "author_id": message.author.id,
         "content": message.content,
         "message_id": message.id,
-        "attachments": [a.url for a in message.attachments]
+        "attachments": [a.url for a in message.attachments],
+        "created_at": message.created_at.isoformat(),
     }
 
     if isinstance(message.author, discord.Member):
@@ -53,7 +53,9 @@ async def process_messages(messages: List[discord.Message]):
                         "If the message contains user mentions, use the mentions to evaluate which users are mentioned where. "
                         "If there are references to original artists or people preprocessing the image, you can ignore those, and just return the builders/printers/mappers as the artists. "
                         "If no size is provided, you can assume 1x1. For all sizes you can assume width comes before height. "
-                        "If no name is not provided, try to extract a suitable name from the attachment url, if the url contains no suitable name, use the name \"unknown\". "
+                        "Use the messages created_at field for the create_date output field, and use the first attachment url for the image_url field. "
+                        "If there are special notable additional infos in the message, add them to notes. "
+                        "If no name is not provided, try to extract a suitable name from the attachment url, if the url contains no suitable name, use the name \"unknown\". Never use the file extension in the name. "
                         "In rare cases, multiple consecutive messages relate to a single map art entry, in those cases, use the message id of the message containing an image attachment.\n\n"
                     ) + json.dumps(message_dicts)
                 ),
@@ -73,7 +75,7 @@ async def process_messages(messages: List[discord.Message]):
                     type=genai.types.Type.ARRAY,
                     items=genai.types.Schema(
                         type=genai.types.Type.OBJECT,
-                        required=["width", "height", "type", "palette", "name", "artists", "message_id"],
+                        required=["width", "height", "type", "palette", "name", "artists", "notes", "image_url", "create_date", "author_id", "message_id"],
                         properties={
                             "width": genai.types.Schema(
                                 type=genai.types.Type.INTEGER,
@@ -98,6 +100,18 @@ async def process_messages(messages: List[discord.Message]):
                                     type=genai.types.Type.STRING,
                                 ),
                             ),
+                            "notes": genai.types.Schema(
+                                type=genai.types.Type.STRING,
+                            ),
+                            "image_url": genai.types.Schema(
+                                type=genai.types.Type.STRING,
+                            ),
+                            "create_date": genai.types.Schema(
+                                type=genai.types.Type.STRING,
+                            ),
+                            "author_id": genai.types.Schema(
+                                type=genai.types.Type.INTEGER,
+                            ),
                             "message_id": genai.types.Schema(
                                 type=genai.types.Type.INTEGER,
                             ),
@@ -117,8 +131,13 @@ async def process_messages(messages: List[discord.Message]):
 
         logger.info(f"processed {len(messages)} message(s), used {response.usage_metadata.total_token_count} tokens")
 
-        map_list = response.parsed["map_arts"]
-        return map_list
+        if "map_arts" in response.parsed:
+            map_list = response.parsed["map_arts"]
+            return map_list
+        else:
+            logger.error("response did not contain key map_arts, returning empty list")
+            return []
     except errors.APIError as e:
         logger.error(f"Error Code {e.code} while processing")
         logger.error(e.message)
+        return []

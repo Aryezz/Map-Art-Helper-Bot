@@ -1,9 +1,10 @@
 import csv
 import enum
 import logging
+from datetime import datetime
 
 import sqlalchemy.ext.asyncio
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_, update
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_, update, DateTime
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import relationship
@@ -66,6 +67,10 @@ class MapArtArchiveEntry(Base):
     palette = Column(Enum(MapArtPalette), nullable=False)
     name = Column(String)
     artists = relationship("MapArtArtist", secondary=artist_mapart, back_populates="maps", lazy="selectin")
+    notes = Column(String)
+    image_url = Column(String)
+    create_date = Column(DateTime)
+    author_id = Column(Integer)
     message_id = Column(Integer)
 
     @property
@@ -78,6 +83,9 @@ class MapArtArchiveEntry(Base):
             "palette": self.palette.name,
             "name": self.name,
             "artists": [artist.name for artist in self.artists],
+            "notes": self.notes,
+            "image_url": self.image_url,
+            "create_date": self.create_date.isoformat(),
             "message_id": self.message_id,
         }
 
@@ -173,13 +181,16 @@ class Session:
                 select_query = select(MapArtArchiveEntry).where(MapArtArchiveEntry.map_id == map_entry["map_id"])
                 db_entry = (await self.session.execute(select_query)).scalars().first()
 
-                if "width" in map_entry: db_entry.width=map_entry["width"]
-                if "height" in map_entry: db_entry.height=map_entry["height"]
-                if "type" in map_entry: db_entry.type=map_type
-                if "palette" in map_entry: db_entry.palette=map_palette
-                if "name" in map_entry: db_entry.name=map_entry["name"]
-                if "artists" in map_entry: db_entry.artists=artist_entities
-                if "message_id" in map_entry: db_entry.message_id=map_entry["message_id"]
+                if "width" in map_entry:       db_entry.width = map_entry["width"]
+                if "height" in map_entry:      db_entry.height = map_entry["height"]
+                if "type" in map_entry:        db_entry.type = map_type
+                if "palette" in map_entry:     db_entry.palette = map_palette
+                if "name" in map_entry:        db_entry.name = map_entry["name"]
+                if "artists" in map_entry:     db_entry.artists = artist_entities
+                if "message_id" in map_entry:  db_entry.message_id = map_entry["message_id"]
+                if "notes" in map_entry:       db_entry.notes = map_entry["notes"]
+                if "image_url" in map_entry:   db_entry.image_url = map_entry["image_url"]
+                if "create_date" in map_entry: db_entry.create_date = datetime.fromisoformat(map_entry["create_date"])
 
                 logger.info(f"updated map with id {map_entry['map_id']}")
             else:
@@ -190,6 +201,10 @@ class Session:
                     palette=map_palette,
                     name=map_entry["name"],
                     artists=artist_entities,
+                    notes=map_entry["notes"],
+                    image_url=map_entry["image_url"],
+                    create_date=datetime.fromisoformat(map_entry["create_date"]),
+                    author_id=map_entry["author_id"],
                     message_id=map_entry["message_id"],
                 ))
 
@@ -198,36 +213,6 @@ class Session:
             logger.info(f"added {len(new_artists)} artists and {len(maps_to_create)} maps")
 
         await self.session.flush()
-
-    async def load_data(self):
-        with open("map_arts.csv", "r", encoding="utf-8") as file:
-            data = file.read()
-
-        reader = csv.reader(
-            filter(lambda line: not line.strip().startswith("#") and not line.strip() == "", data.split("\n")),
-            delimiter=';', quotechar='"')
-
-        parsed_entries = []
-        for entry in reader:
-            width = int(entry[0].strip())
-            height = int(entry[1].strip())
-            map_type = entry[2].strip()
-            palette = entry[3].strip()
-            name = entry[4].strip()
-            artists = [a.strip() for a in entry[5].split(",")]
-            message_id = int(entry[6].strip())
-
-            parsed_entries.append({
-                "width": width,
-                "height": height,
-                "type": map_type,
-                "palette": palette,
-                "name": name,
-                "artists": artists,
-                "message_id": message_id,
-            })
-
-        await self.add_maps(parsed_entries)
 
     class MapArtQueryBuilder:
         def __init__(self, session):
