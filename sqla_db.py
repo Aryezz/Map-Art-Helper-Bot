@@ -131,8 +131,9 @@ class Session:
     async def add_maps(self, maps):
         all_artist_names = set()
 
-        for map in maps:
-            all_artist_names.update(map["artists"])
+        for map_entry in maps:
+            if "artists" in map_entry:
+                all_artist_names.update(map_entry["artists"])
 
         existing_artists_query = await self.session.execute(
             select(MapArtArtist).where(MapArtArtist.name.in_(all_artist_names)))
@@ -148,48 +149,52 @@ class Session:
             artist_map[artist.name] = artist
 
         maps_to_create = []
-        for parsed_entry in maps:
-            artist_entities = [artist_map[name] for name in parsed_entry["artists"]]
+        for map_entry in maps:
+            artist_entities = None
+            if "artists" in map_entry:
+                artist_entities = [artist_map[name] for name in map_entry["artists"]]
 
             map_type = MapArtType.UNKNOWN
-            if parsed_entry["type"] in MapArtType:
-                map_type = MapArtType(parsed_entry["type"])
-            elif parsed_entry["type"] in MapArtType.__members__:
-                map_type = MapArtType[parsed_entry["type"]]
+            if "type" in map_entry:
+                if map_entry["type"] in MapArtType:
+                    map_type = MapArtType(map_entry["type"])
+                elif map_entry["type"] in MapArtType.__members__:
+                    map_type = MapArtType[map_entry["type"]]
 
             map_palette = MapArtPalette.UNKNOWN
-            if parsed_entry["palette"] in MapArtPalette:
-                map_palette = MapArtPalette(parsed_entry["palette"])
-            elif parsed_entry["palette"] in MapArtPalette.__members__:
-                map_palette = MapArtPalette[parsed_entry["palette"]]
+            if "palette" in map_entry:
+                if map_entry["palette"] in MapArtPalette:
+                    map_palette = MapArtPalette(map_entry["palette"])
+                elif map_entry["palette"] in MapArtPalette.__members__:
+                    map_palette = MapArtPalette[map_entry["palette"]]
 
-            if "map_id" in parsed_entry:
-                select_query = select(MapArtArchiveEntry).where(MapArtArchiveEntry.map_id == parsed_entry["map_id"])
+            if "map_id" in map_entry:
+                select_query = select(MapArtArchiveEntry).where(MapArtArchiveEntry.map_id == map_entry["map_id"])
                 db_entry = (await self.session.execute(select_query)).scalars().first()
-                db_entry.width=parsed_entry["width"]
-                db_entry.height=parsed_entry["height"]
-                db_entry.type=map_type
-                db_entry.palette=map_palette
-                db_entry.name=parsed_entry["name"]
-                db_entry.artists=artist_entities
-                db_entry.message_id=parsed_entry["message_id"]
 
-                logger.info(f"updated map {parsed_entry['name']} with id {parsed_entry['map_id']}")
+                if "width" in map_entry: db_entry.width=map_entry["width"]
+                if "height" in map_entry: db_entry.height=map_entry["height"]
+                if "type" in map_entry: db_entry.type=map_type
+                if "palette" in map_entry: db_entry.palette=map_palette
+                if "name" in map_entry: db_entry.name=map_entry["name"]
+                if "artists" in map_entry: db_entry.artists=artist_entities
+                if "message_id" in map_entry: db_entry.message_id=map_entry["message_id"]
+
+                logger.info(f"updated map with id {map_entry['map_id']}")
             else:
                 maps_to_create.append(MapArtArchiveEntry(
-                    width=parsed_entry["width"],
-                    height=parsed_entry["height"],
+                    width=map_entry["width"],
+                    height=map_entry["height"],
                     type=map_type,
                     palette=map_palette,
-                    name=parsed_entry["name"],
+                    name=map_entry["name"],
                     artists=artist_entities,
-                    message_id=parsed_entry["message_id"],
+                    message_id=map_entry["message_id"],
                 ))
 
         if len(maps_to_create) > 0:
             self.session.add_all(maps_to_create)
-
-        logger.info(f"added {len(new_artists)} artists and {len(maps_to_create)} maps")
+            logger.info(f"added {len(new_artists)} artists and {len(maps_to_create)} maps")
 
         await self.session.flush()
 
