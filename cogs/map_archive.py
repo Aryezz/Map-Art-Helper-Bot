@@ -1,6 +1,8 @@
 import io
 import json
+import logging
 import math
+import traceback
 from typing import Set
 
 import discord
@@ -13,6 +15,8 @@ import config
 import sqla_db
 from cogs import checks
 
+logger = logging.getLogger("discord.map_archive")
+
 
 class MapArchiveCommands(commands.Cog, name="Map Archive"):
     def __init__(self, bot):
@@ -20,11 +24,43 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         self.archive_channel: discord.TextChannel = self.bot.get_channel(config.map_archive_channel_id)
         self.bot_log_channel: discord.TextChannel = self.bot.get_channel(config.bot_log_channel_id)
 
-        self.update_archive.add_exception_type(BaseException)
         self.update_archive.start()
+
+    async def cog_load(self) -> None:
+        await sqla_db.create_schema()
 
     def cog_unload(self):
         self.update_archive.cancel()
+
+    @tasks.loop(minutes=5)
+    async def update_archive(self):
+        try:
+            async with sqla_db.Session() as db:
+                latest_entry_message = await db.get_latest_message_id()
+
+            if latest_entry_message is not None:
+                latest_message = await self.archive_channel.fetch_message(latest_entry_message)
+                fetch_from_timestamp = latest_message.created_at
+                messages = [message async for message in self.archive_channel.history(limit=50, after=fetch_from_timestamp, oldest_first=True)]
+            else:
+                messages = [message async for message in self.archive_channel.history(limit=50, oldest_first=True)]
+
+            if len(messages) == 0:
+                return
+
+            processed = await ai.process_messages(messages)
+
+            async with sqla_db.Session() as db:
+                await db.add_maps(processed)
+
+            await self.bot_log_channel.send(f"processed {len(messages)} messages, added {len(processed)} maps")
+        except BaseException as e:
+            logger.error("error while processing maps", exc_info=e)
+            await self.bot_log_channel.send(f"error while processing maps: \n```{e}\n{traceback.format_exc()}```")
+
+    @update_archive.before_loop
+    async def before_updating_archive(self):
+        await self.bot.wait_until_ready()
 
     @is_owner()
     @commands.command()
@@ -68,33 +104,6 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             await db.add_maps(entries)
 
         await ctx.send("done")
-
-
-    @tasks.loop(minutes=5)
-    async def update_archive(self):
-        async with sqla_db.Session() as db:
-            latest_entry_message = await db.get_latest_message_id()
-
-        if latest_entry_message is not None:
-            latest_message = await self.archive_channel.fetch_message(latest_entry_message)
-            fetch_from_timestamp = latest_message.created_at
-            messages = [message async for message in self.archive_channel.history(limit=50, after=fetch_from_timestamp, oldest_first=True)]
-        else:
-            messages = [message async for message in self.archive_channel.history(limit=50, oldest_first=True)]
-
-        if len(messages) == 0:
-            return
-
-        processed = await ai.process_messages(messages)
-
-        async with sqla_db.Session() as db:
-            await db.add_maps(processed)
-
-        await self.bot_log_channel.send(f"processed {len(messages)} messages, added {len(processed)} maps")
-
-    @update_archive.before_loop
-    async def before_updating_archive(self):
-        await self.bot.wait_until_ready()
 
     @checks.is_in_bot_channel()
     @commands.command(aliases=["largest"])

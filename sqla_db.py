@@ -1,4 +1,3 @@
-import csv
 import enum
 import logging
 from datetime import datetime
@@ -117,13 +116,17 @@ class MapArtArchiveEntry(Base):
         return size_info + " - " + extra_info
 
 
-class Session:
-    async def __aenter__(self):
-        engine = create_async_engine(f"sqlite+aiosqlite:///map_art.db")
-        self.session = async_sessionmaker(engine, expire_on_commit=False)()
+async def create_schema():
+    async with Session.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+
+class Session:
+    engine = create_async_engine(f"sqlite+aiosqlite:///map_art.db")
+    session_maker = async_sessionmaker(engine, expire_on_commit=False)
+
+    async def __aenter__(self):
+        self.session = Session.session_maker()
 
         return self
 
