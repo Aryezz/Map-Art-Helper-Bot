@@ -6,7 +6,7 @@ class BotChannelsOnly(commands.CheckFailure):
 
 def is_in_bot_channel():
     async def predicate(ctx):
-        if ctx.channel.name.startswith("bot-"):
+        if not ctx.channel.name.startswith("bot-"):
             raise BotChannelsOnly()
         return True
 
