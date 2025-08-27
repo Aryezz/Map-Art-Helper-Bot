@@ -19,6 +19,8 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         self.bot: discord.Client = bot
         self.archive_channel: discord.TextChannel = self.bot.get_channel(config.map_archive_channel_id)
         self.bot_log_channel: discord.TextChannel = self.bot.get_channel(config.bot_log_channel_id)
+
+        self.update_archive.add_exception_type(BaseException)
         self.update_archive.start()
 
     def cog_unload(self):
