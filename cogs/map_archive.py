@@ -1,3 +1,4 @@
+import datetime
 import io
 import json
 import logging
@@ -51,10 +52,12 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             async with sqla_db.Session() as db:
                 await db.add_maps(processed)
 
-            await self.bot_log_channel.send(f"processed {len(messages)} messages, added {len(processed)} maps")
+            if not config.dev_mode:
+                await self.bot_log_channel.send(f"processed {len(messages)} messages, added {len(processed)} maps")
         except BaseException as e:
             logger.error("error while processing maps", exc_info=e)
-            await self.bot_log_channel.send(f"error while processing maps: \n```{e}\n{traceback.format_exc()}```")
+            if not config.dev_mode:
+                await self.bot_log_channel.send(f"error while processing maps: \n```{e}\n{traceback.format_exc()}```")
 
     @update_archive.before_loop
     async def before_updating_archive(self):

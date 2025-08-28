@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 from typing import List
@@ -18,7 +19,7 @@ def serialize_message(message: discord.Message):
         "content": message.content,
         "message_id": message.id,
         "attachments": [a.url for a in message.attachments],
-        "created_at": message.created_at.isoformat(),
+        "created_at": message.created_at.replace(tzinfo=datetime.UTC).isoformat(),
     }
 
     if isinstance(message.author, discord.Member):

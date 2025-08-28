@@ -1,9 +1,9 @@
 import enum
 import logging
-from datetime import datetime
+import datetime
 
 import sqlalchemy.ext.asyncio
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_, update, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_, DateTime
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import relationship
@@ -84,9 +84,13 @@ class MapArtArchiveEntry(Base):
             "artists": [artist.name for artist in self.artists],
             "notes": self.notes,
             "image_url": self.image_url,
-            "create_date": self.create_date.isoformat(),
+            "create_date": self.create_date_utc,
             "message_id": self.message_id,
         }
+
+    @property
+    def create_date_utc(self):
+        return self.create_date.replace(tzinfo=datetime.UTC)
 
     @property
     def total_maps(self):
@@ -137,9 +141,9 @@ class Session:
     def get_query_builder(self):
         return self.MapArtQueryBuilder(self.session)
 
-    async def get_latest_create_date(self):
+    async def get_latest_create_date(self) -> datetime.datetime:
         query = select(func.max(MapArtArchiveEntry.create_date))
-        return (await self.session.execute(query)).scalar()
+        return (await self.session.execute(query)).scalar().replace(tzinfo=datetime.UTC)
 
     async def add_maps(self, maps):
         all_artist_names = set()
@@ -194,7 +198,7 @@ class Session:
                 if "message_id" in map_entry:  db_entry.message_id = map_entry["message_id"]
                 if "notes" in map_entry:       db_entry.notes = map_entry["notes"]
                 if "image_url" in map_entry:   db_entry.image_url = map_entry["image_url"]
-                if "create_date" in map_entry: db_entry.create_date = datetime.fromisoformat(map_entry["create_date"])
+                if "create_date" in map_entry: db_entry.create_date = datetime.datetime.fromisoformat(map_entry["create_date"])
 
                 logger.info(f"updated map with id {map_entry['map_id']}")
             else:
@@ -207,7 +211,7 @@ class Session:
                     artists=artist_entities,
                     notes=map_entry["notes"],
                     image_url=map_entry["image_url"],
-                    create_date=datetime.fromisoformat(map_entry["create_date"]),
+                    create_date=datetime.datetime.fromisoformat(map_entry["create_date"]),
                     author_id=map_entry["author_id"],
                     message_id=map_entry["message_id"],
                 ))
