@@ -36,11 +36,9 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     async def update_archive(self):
         try:
             async with sqla_db.Session() as db:
-                latest_entry_message = await db.get_latest_message_id()
+                fetch_from_timestamp = await db.get_latest_create_date()
 
-            if latest_entry_message is not None:
-                latest_message = await self.archive_channel.fetch_message(latest_entry_message)
-                fetch_from_timestamp = latest_message.created_at
+            if fetch_from_timestamp is not None:
                 messages = [message async for message in self.archive_channel.history(limit=50, after=fetch_from_timestamp, oldest_first=True)]
             else:
                 messages = [message async for message in self.archive_channel.history(limit=50, oldest_first=True)]

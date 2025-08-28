@@ -137,8 +137,9 @@ class Session:
     def get_query_builder(self):
         return self.MapArtQueryBuilder(self.session)
 
-    async def get_latest_message_id(self):
-        return (await self.session.execute(select(func.max(MapArtArchiveEntry.message_id)))).scalar()
+    async def get_latest_create_date(self):
+        query = select(func.max(MapArtArchiveEntry.create_date))
+        return (await self.session.execute(query)).scalar()
 
     async def add_maps(self, maps):
         all_artist_names = set()
