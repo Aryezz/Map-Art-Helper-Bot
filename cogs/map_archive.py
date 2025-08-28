@@ -90,7 +90,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
         if len(json_output) + 6 > 2000:
             file = io.StringIO(json_output)
-            await ctx.send(file=discord.File(file, "results.txt"))
+            await ctx.send(file=discord.File(file, "results.json"))
         else:
             await ctx.send(f"```{json_output}```")
 
