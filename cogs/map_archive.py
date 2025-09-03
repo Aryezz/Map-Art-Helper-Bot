@@ -57,13 +57,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         await ctx.send(view=MapEntityEditorView(ctx.author, results[0]))
 
     async def fix_attributes(self, entry: MapArtArchiveEntry) -> Optional[MapArtArchiveEntry]:
-        try:
-            message = await self.archive_channel.fetch_message(entry.message_id)
-        except DiscordException:
-            logger.error(f"failed to fetch message with id {entry.message_id}")
-            await self.bot_log_channel.send(f"failed to fetch message with id {entry.message_id}\n```txt\n{entry.__repr__()}\n```")
-
-            return None
+        message = await self.archive_channel.fetch_message(entry.message_id)
 
         entry.author_id = message.author.id
         entry.create_date = message.created_at.replace(tzinfo=datetime.UTC)
@@ -88,12 +82,12 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
             ai_processed = await ai.process_messages(messages)
 
-            final_entries: List[MapArtArchiveEntry] = []
-            for entry in ai_processed:
-                fixed = await self.fix_attributes(entry)
-
-                if fixed is not None:
-                    final_entries.append(fixed)
+            try:
+                final_entries: List[MapArtArchiveEntry] = [await self.fix_attributes(entry) for entry in ai_processed]
+            except DiscordException:
+                logger.error("error in LLM returned data, skipping")
+                await self.bot_log_channel.send("error in LLM returned data, skipping")
+                return
 
             async with sqla_db.Session() as db:
                 await db.add_maps(final_entries)
