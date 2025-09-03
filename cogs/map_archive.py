@@ -63,6 +63,8 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         entry.image_url = message.attachments[0].url if len(message.attachments) > 0 else ""
         entry.flagged = any(attachment.is_spoiler() for attachment in message.attachments)
 
+        return entry
+
     @tasks.loop(minutes=5)
     async def update_archive(self):
         try:
@@ -79,9 +81,9 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
             ai_processed = await ai.process_messages(messages)
 
-            final_entries = []
+            final_entries: List[MapArtArchiveEntry] = []
             for entry in ai_processed:
-                final_entries.append(self.fix_attributes(entry))
+                final_entries.append(await self.fix_attributes(entry))
 
             async with sqla_db.Session() as db:
                 await db.add_maps(final_entries)
