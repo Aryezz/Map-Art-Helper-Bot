@@ -120,10 +120,6 @@ class MapTextEditButton(ui.Button['MapEntityEditorView']):
     def __init__(self, entry: MapArtArchiveEntry):
         super().__init__(style=discord.ButtonStyle.grey)
         self.entry = entry
-
-        self.update_button()
-
-    def update_button(self):
         self.label = "Edit"
 
     async def callback(self, interaction: discord.Interaction[Bot]) -> None:
@@ -226,14 +222,47 @@ class MapDiscordTextEditButton(ui.Button['MapEntityEditorView']):
     def __init__(self, entry: MapArtArchiveEntry):
         super().__init__(style=discord.ButtonStyle.red)
         self.entry = entry
-
-        self.update_button()
-
-    def update_button(self):
         self.label = "Edit"
 
     async def callback(self, interaction: discord.Interaction[Bot]) -> None:
         await interaction.response.send_modal(MapDiscordAttributeEditorModal(self.view))
+
+
+class FlagEntryButton(ui.Button['MapEntityEditorView']):
+    def __init__(self, entry: MapArtArchiveEntry):
+        super().__init__(style=discord.ButtonStyle.red)
+        self.entry = entry
+
+        self.update_button()
+
+    def update_button(self):
+        if not self.entry.flagged:
+            self.label = "Flag Entry"
+            self.style = discord.ButtonStyle.red
+        else:
+            self.label = "Unflag Entry"
+            self.style = discord.ButtonStyle.green
+
+    async def callback(self, interaction: discord.Interaction[Bot]) -> None:
+        self.entry.flagged = not self.entry.flagged
+        self.update_button()
+        await interaction.response.edit_message(view=self.view)
+
+
+class DeleteEntryButton(ui.Button['MapEntityEditorView']):
+    def __init__(self, entry: MapArtArchiveEntry):
+        super().__init__(style=discord.ButtonStyle.red)
+        self.entry = entry
+        self.label = "Delete Entry"
+        self.you_sure = False
+
+    async def callback(self, interaction: discord.Interaction[Bot]) -> None:
+        if not self.you_sure:
+            self.label = "YOU SURE?"
+            self.you_sure = True
+            await interaction.response.edit_message(view=self.view)
+        else:
+            await self.view.delete_entry(interaction)
 
 
 class MapEntityEditorView(BaseView):
@@ -283,8 +312,14 @@ class MapEntityEditorView(BaseView):
         container.add_item(ui.Separator(spacing=discord.SeparatorSpacing.small))
         container.add_item(
             ui.Section(
-                ui.TextDisplay("## Discord Attributes\n-# You probably don't have to change these, be careful!"),
+                ui.TextDisplay("## Administrative Stuff\n-# You probably don't have to change these, be careful!"),
                 accessory=MapDiscordTextEditButton(self.entry)
+            )
+        )
+        container.add_item(
+            ui.ActionRow(
+                FlagEntryButton(self.entry),
+                DeleteEntryButton(self.entry),
             )
         )
 
@@ -301,3 +336,14 @@ class MapEntityEditorView(BaseView):
         await interaction.followup.send(f'Map art saved', ephemeral=True)
         self.stop()
         await interaction.delete_original_response()
+
+    async def delete_entry(self, interaction: discord.Interaction[Bot]) -> None:
+        await interaction.response.edit_message(view=self)
+
+        async with sqla_db.Session() as db:
+            await db.delete_maps([self.entry])
+
+        await interaction.followup.send(f'Map art deleted', ephemeral=True)
+        self.stop()
+        await interaction.delete_original_response()
+

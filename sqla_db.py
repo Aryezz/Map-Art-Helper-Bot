@@ -3,7 +3,7 @@ import datetime
 from typing import Iterable
 
 import sqlalchemy.ext.asyncio
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_, DateTime, Boolean
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import relationship
@@ -49,6 +49,7 @@ class MapArtArchiveDBEntry(Base):
     create_date = Column(DateTime)
     author_id = Column(Integer)
     message_id = Column(Integer)
+    flagged = Column(Boolean)
 
     @property
     def create_date_utc(self):
@@ -68,6 +69,7 @@ class MapArtArchiveDBEntry(Base):
             create_date=self.create_date_utc,
             author_id=self.author_id,
             message_id=self.message_id,
+            flagged=self.flagged,
         )
 
 
@@ -94,7 +96,8 @@ class Session:
 
     async def get_latest_create_date(self) -> datetime.datetime:
         query = select(func.max(MapArtArchiveDBEntry.create_date))
-        return (await self.session.execute(query)).scalar().replace(tzinfo=datetime.UTC)
+        date = (await self.session.execute(query)).scalar()
+        return date.replace(tzinfo=datetime.UTC) if date is not None else datetime.datetime(2015, 1, 1, 0, 0, tzinfo=datetime.UTC)
 
     async def add_maps(self, maps: Iterable[MapArtArchiveEntry]):
         all_artist_names = set()
@@ -134,6 +137,7 @@ class Session:
                 db_entry.create_date = map_entry.create_date
                 db_entry.author_id = map_entry.author_id
                 db_entry.message_id = map_entry.message_id
+                db_entry.flagged = map_entry.flagged
 
                 logger.info(f"updated map with id {map_entry.map_id}")
             else:
@@ -149,6 +153,7 @@ class Session:
                     create_date=map_entry.create_date,
                     author_id=map_entry.author_id,
                     message_id=map_entry.message_id,
+                    flagged=map_entry.flagged
                 ))
 
         if len(maps_to_create) > 0:
@@ -156,6 +161,14 @@ class Session:
             logger.info(f"added {len(new_artists)} artists and {len(maps_to_create)} maps")
 
         await self.session.flush()
+
+    async def delete_maps(self, maps: Iterable[MapArtArchiveEntry]):
+        map_ids_to_delete = [entry.map_id for entry in maps]
+
+        db_entries = (await self.session.execute(select(MapArtArchiveDBEntry).where(MapArtArchiveDBEntry.map_id.in_(map_ids_to_delete)))).scalars().all()
+
+        for db_entry in db_entries:
+            await self.session.delete(db_entry)
 
     class MapArtQueryBuilder:
         def __init__(self, session):

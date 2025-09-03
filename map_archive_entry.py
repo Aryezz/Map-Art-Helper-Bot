@@ -42,6 +42,7 @@ class MapArtArchiveEntry(BaseModel):
     author_id: int
     message_id: int
     map_id: Optional[int] = None
+    flagged: bool = False
 
     @property
     def total_maps(self):

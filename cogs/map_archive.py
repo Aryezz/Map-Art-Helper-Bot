@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import math
@@ -14,6 +15,7 @@ import config
 import sqla_db
 from cogs import checks
 from cogs.views import MapEntityEditorView
+from map_archive_entry import MapArtArchiveEntry
 
 logger = logging.getLogger("discord.map_archive")
 
@@ -24,11 +26,11 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         self.archive_channel: discord.TextChannel = self.bot.get_channel(config.map_archive_channel_id)
         self.bot_log_channel: discord.TextChannel = self.bot.get_channel(config.bot_log_channel_id)
 
-        if not config.dev_mode:
-            self.update_archive.start()
-
     async def cog_load(self) -> None:
         await sqla_db.create_schema()
+
+        if not config.dev_mode:
+            self.update_archive.start()
 
     def cog_unload(self):
         self.update_archive.cancel()
@@ -52,6 +54,14 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
         await ctx.send(view=MapEntityEditorView(ctx.author, results[0]))
 
+    async def fix_attributes(self, entry: MapArtArchiveEntry):
+        message = await self.archive_channel.fetch_message(entry.message_id)
+
+        entry.author_id = message.author.id
+        entry.create_date = message.created_at.replace(tzinfo=datetime.UTC)
+        entry.image_url = message.attachments[0].url if len(message.attachments) > 0 else ""
+        entry.flagged = any(attachment.is_spoiler() for attachment in message.attachments)
+
     @tasks.loop(minutes=5)
     async def update_archive(self):
         try:
@@ -66,10 +76,14 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             if len(messages) == 0:
                 return
 
-            processed = await ai.process_messages(messages)
+            ai_processed = await ai.process_messages(messages)
+
+            final_entries = []
+            for entry in ai_processed:
+                final_entries.append(self.fix_attributes(entry))
 
             async with sqla_db.Session() as db:
-                await db.add_maps(processed)
+                await db.add_maps(final_entries)
 
             if not config.dev_mode:
                 await self.bot_log_channel.send(f"processed {len(messages)} messages, added {len(processed)} maps")
