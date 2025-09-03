@@ -8,6 +8,7 @@ from google import genai
 from google.genai import types, errors
 
 import config
+from map_archive_entry import MapArtArchiveEntry
 
 logger = logging.getLogger("discord.gemini")
 
@@ -44,84 +45,20 @@ async def process_messages(messages: List[discord.Message]):
     message_dicts = [serialize_message(message) for message in messages]
 
     model = "gemini-2.5-flash-lite"
-    contents = [
-        types.Content(
-            role="user",
-            parts=[
-                types.Part.from_text(
-                    text=(
-                        "Process the following serialized Discord messages to extract info. "
-                        "The messages describe Minecraft map arts and contain some structured properties. "
-                        "If the message contains user mentions, use the mentions to evaluate which users are mentioned where. "
-                        "If there are references to original artists or people preprocessing the image, you can ignore those, and just return the builders/printers/mappers as the artists. "
-                        "If no size is provided, you can assume 1x1. For all sizes you can assume width comes before height. "
-                        "Use the messages created_at field for the create_date output field, and use the first attachment url for the image_url field. "
-                        "If there are special notable additional infos in the message, add them to notes. "
-                        "If no name is not provided, try to extract a suitable name from the attachment url, if the url contains no suitable name, use the name \"unknown\". Never use the file extension in the name. "
-                        "In rare cases, multiple consecutive messages relate to a single map art entry, in those cases, use the message id of the message containing an image attachment.\n\n"
-                    ) + json.dumps(message_dicts)
-                ),
-            ],
-        ),
-    ]
+    contents = (
+        "Process the following serialized Discord messages to extract info. "
+        "The messages describe Minecraft map arts and contain some structured properties. "
+        "If the message contains user mentions, use the mentions to evaluate which users are mentioned where. "
+        "If there are references to original artists or people preprocessing the image, you can ignore those, and just return the builders/printers/mappers as the artists. "
+        "If no size is provided, you can assume 1x1. For all sizes you can assume width comes before height. "
+        "Use the messages created_at field for the create_date output field, and use the first attachment url for the image_url field. "
+        "If there are special notable additional infos in the message, add them to notes. "
+        "If no name is not provided, try to extract a suitable name from the attachment url, if the url contains no suitable name, use the name \"unknown\". Never use the file extension in the name. "
+        "In rare cases, multiple consecutive messages relate to a single map art entry, in those cases, use the message id of the message containing an image attachment.\n\n"
+    ) + json.dumps(message_dicts)
     generate_content_config = types.GenerateContentConfig(
-        thinking_config=types.ThinkingConfig(
-            thinking_budget=0,
-        ),
         response_mime_type="application/json",
-        response_schema=genai.types.Schema(
-            type=genai.types.Type.OBJECT,
-            required=["map_arts"],
-            properties={
-                "map_arts": genai.types.Schema(
-                    type=genai.types.Type.ARRAY,
-                    items=genai.types.Schema(
-                        type=genai.types.Type.OBJECT,
-                        required=["width", "height", "type", "palette", "name", "artists", "notes", "image_url", "create_date", "author_id", "message_id"],
-                        properties={
-                            "width": genai.types.Schema(
-                                type=genai.types.Type.INTEGER,
-                            ),
-                            "height": genai.types.Schema(
-                                type=genai.types.Type.INTEGER,
-                            ),
-                            "type": genai.types.Schema(
-                                type=genai.types.Type.STRING,
-                                enum=["FLAT", "DUALLAYERED", "STAIRCASED", "SEMISTAIRCASED", "UNKNOWN"],
-                            ),
-                            "palette": genai.types.Schema(
-                                type=genai.types.Type.STRING,
-                                enum=["FULLCOLOUR", "TWOCOLOUR", "CARPETONLY", "GREYSCALE", "UNKNOWN"],
-                            ),
-                            "name": genai.types.Schema(
-                                type=genai.types.Type.STRING,
-                            ),
-                            "artists": genai.types.Schema(
-                                type=genai.types.Type.ARRAY,
-                                items=genai.types.Schema(
-                                    type=genai.types.Type.STRING,
-                                ),
-                            ),
-                            "notes": genai.types.Schema(
-                                type=genai.types.Type.STRING,
-                            ),
-                            "image_url": genai.types.Schema(
-                                type=genai.types.Type.STRING,
-                            ),
-                            "create_date": genai.types.Schema(
-                                type=genai.types.Type.STRING,
-                            ),
-                            "author_id": genai.types.Schema(
-                                type=genai.types.Type.INTEGER,
-                            ),
-                            "message_id": genai.types.Schema(
-                                type=genai.types.Type.INTEGER,
-                            ),
-                        },
-                    ),
-                ),
-            },
-        ),
+        response_schema=list[MapArtArchiveEntry]
     )
 
     try:
@@ -133,11 +70,10 @@ async def process_messages(messages: List[discord.Message]):
 
         logger.info(f"processed {len(messages)} message(s), used {response.usage_metadata.total_token_count} tokens")
 
-        response_parsed = json.loads(response.text)
+        response_parsed = response.parsed
 
-        if "map_arts" in response_parsed:
-            map_list = response_parsed["map_arts"]
-            return map_list
+        if response_parsed is not None:
+            return response_parsed
         else:
             logger.error("response did not contain key map_arts, returning empty list")
             return []

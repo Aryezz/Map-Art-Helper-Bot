@@ -1,5 +1,6 @@
 aiosqlite==0.21.0
-discord.py==2.6
-humanize==4.12.3
+discord.py==2.6.3
+humanize==4.13.0
 sqlalchemy[asyncio]==2.0.43
-google-genai==1.31.0
+google-genai==1.32.0
+pydantic==2.11.7

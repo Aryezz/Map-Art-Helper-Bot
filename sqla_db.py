@@ -1,6 +1,6 @@
-import enum
 import logging
 import datetime
+from typing import Iterable
 
 import sqlalchemy.ext.asyncio
 from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_, DateTime
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import relationship
 
-import config
+from map_archive_entry import MapArtType, MapArtPalette, MapArtArchiveEntry
 
 logger = logging.getLogger("discord.db")
 
@@ -29,35 +29,13 @@ class MapArtArtist(Base):
     __tablename__ = "artist"
     artist_id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
-    maps = relationship("MapArtArchiveEntry", secondary=artist_mapart, back_populates="artists")
+    maps = relationship("MapArtArchiveDBEntry", secondary=artist_mapart, back_populates="artists")
 
     def __str__(self):
         return self.name
 
 
-class MapArtType(enum.Enum):
-    FLAT = "flat"
-    DUALLAYERED = "dual-layered"
-    STAIRCASED = "staircased"
-    SEMISTAIRCASED = "semi-staircased"
-    UNKNOWN = "unknown"
-
-    def __str__(self):
-        return self.value
-
-
-class MapArtPalette(enum.Enum):
-    FULLCOLOUR = "full colour"
-    TWOCOLOUR = "two-colour"
-    CARPETONLY = "carpet only"
-    GREYSCALE = "greyscale"
-    UNKNOWN = "unknown"
-
-    def __str__(self):
-        return self.value
-
-
-class MapArtArchiveEntry(Base):
+class MapArtArchiveDBEntry(Base):
     __tablename__ = "map_art"
     map_id = Column(Integer, primary_key=True)
     width = Column(Integer)
@@ -73,51 +51,24 @@ class MapArtArchiveEntry(Base):
     message_id = Column(Integer)
 
     @property
-    def json(self):
-        return {
-            "map_id": self.map_id,
-            "width": self.width,
-            "height": self.height,
-            "type": self.type.name,
-            "palette": self.palette.name,
-            "name": self.name,
-            "artists": [artist.name for artist in self.artists],
-            "notes": self.notes,
-            "image_url": self.image_url,
-            "create_date": self.create_date_utc,
-            "message_id": self.message_id,
-        }
-
-    @property
     def create_date_utc(self):
         return self.create_date.replace(tzinfo=datetime.UTC)
 
-    @property
-    def total_maps(self):
-        return self.width * self.height
-
-    @property
-    def link(self):
-        return f"https://discord.com/channels/{config.map_artists_guild_id}/{config.map_archive_channel_id}/{self.message_id}"
-
-    @property
-    def artists_str(self):
-        """Returns a grammatically correct, comma-separated string of artist names."""
-        names = [artist.name for artist in self.artists]
-        if len(names) == 0:
-            return ""
-        if len(names) == 1:
-            return names[0]
-        if len(names) == 2:
-            return f"{names[0]} and {names[1]}"
-        return f"{', '.join(names[:-1])}, and {names[-1]}"
-
-    @property
-    def line(self):
-        size_info = f"{self.width} x {self.height} ({self.total_maps} maps)"
-        extra_info = f"[{self.type}, {self.palette}] - [**{self.name}**]({self.link}) by **{self.artists_str}**"
-
-        return size_info + " - " + extra_info
+    def as_entry(self):
+        return MapArtArchiveEntry(
+            map_id=self.map_id,
+            width=self.width,
+            height=self.height,
+            map_type=self.type,
+            palette=self.palette,
+            name=self.name,
+            artists=[artist.name for artist in self.artists],
+            notes=self.notes,
+            image_url=self.image_url,
+            create_date=self.create_date_utc,
+            author_id=self.author_id,
+            message_id=self.message_id,
+        )
 
 
 async def create_schema():
@@ -142,15 +93,14 @@ class Session:
         return self.MapArtQueryBuilder(self.session)
 
     async def get_latest_create_date(self) -> datetime.datetime:
-        query = select(func.max(MapArtArchiveEntry.create_date))
+        query = select(func.max(MapArtArchiveDBEntry.create_date))
         return (await self.session.execute(query)).scalar().replace(tzinfo=datetime.UTC)
 
-    async def add_maps(self, maps):
+    async def add_maps(self, maps: Iterable[MapArtArchiveEntry]):
         all_artist_names = set()
 
         for map_entry in maps:
-            if "artists" in map_entry:
-                all_artist_names.update(map_entry["artists"])
+            all_artist_names.update(map_entry.artists)
 
         existing_artists_query = await self.session.execute(
             select(MapArtArtist).where(MapArtArtist.name.in_(all_artist_names)))
@@ -167,53 +117,38 @@ class Session:
 
         maps_to_create = []
         for map_entry in maps:
-            artist_entities = None
-            if "artists" in map_entry:
-                artist_entities = [artist_map[name] for name in map_entry["artists"]]
+            artist_entities = [artist_map[name] for name in map_entry.artists]
 
-            map_type = MapArtType.UNKNOWN
-            if "type" in map_entry:
-                if map_entry["type"] in MapArtType:
-                    map_type = MapArtType(map_entry["type"])
-                elif map_entry["type"] in MapArtType.__members__:
-                    map_type = MapArtType[map_entry["type"]]
-
-            map_palette = MapArtPalette.UNKNOWN
-            if "palette" in map_entry:
-                if map_entry["palette"] in MapArtPalette:
-                    map_palette = MapArtPalette(map_entry["palette"])
-                elif map_entry["palette"] in MapArtPalette.__members__:
-                    map_palette = MapArtPalette[map_entry["palette"]]
-
-            if "map_id" in map_entry:
-                select_query = select(MapArtArchiveEntry).where(MapArtArchiveEntry.map_id == map_entry["map_id"])
+            if map_entry.map_id is not None:
+                select_query = select(MapArtArchiveDBEntry).where(MapArtArchiveDBEntry.map_id == map_entry.map_id)
                 db_entry = (await self.session.execute(select_query)).scalars().first()
 
-                if "width" in map_entry:       db_entry.width = map_entry["width"]
-                if "height" in map_entry:      db_entry.height = map_entry["height"]
-                if "type" in map_entry:        db_entry.type = map_type
-                if "palette" in map_entry:     db_entry.palette = map_palette
-                if "name" in map_entry:        db_entry.name = map_entry["name"]
-                if "artists" in map_entry:     db_entry.artists = artist_entities
-                if "message_id" in map_entry:  db_entry.message_id = map_entry["message_id"]
-                if "notes" in map_entry:       db_entry.notes = map_entry["notes"]
-                if "image_url" in map_entry:   db_entry.image_url = map_entry["image_url"]
-                if "create_date" in map_entry: db_entry.create_date = datetime.datetime.fromisoformat(map_entry["create_date"])
+                db_entry.width = map_entry.width
+                db_entry.height = map_entry.height
+                db_entry.type = map_entry.map_type
+                db_entry.palette = map_entry.palette
+                db_entry.name = map_entry.name
+                db_entry.artists = artist_entities
+                db_entry.notes = map_entry.notes
+                db_entry.image_url = map_entry.image_url
+                db_entry.create_date = map_entry.create_date
+                db_entry.author_id = map_entry.author_id
+                db_entry.message_id = map_entry.message_id
 
-                logger.info(f"updated map with id {map_entry['map_id']}")
+                logger.info(f"updated map with id {map_entry.map_id}")
             else:
-                maps_to_create.append(MapArtArchiveEntry(
-                    width=map_entry["width"],
-                    height=map_entry["height"],
-                    type=map_type,
-                    palette=map_palette,
-                    name=map_entry["name"],
+                maps_to_create.append(MapArtArchiveDBEntry(
+                    width=map_entry.width,
+                    height=map_entry.height,
+                    type=map_entry.map_type,
+                    palette=map_entry.palette,
+                    name=map_entry.name,
                     artists=artist_entities,
-                    notes=map_entry["notes"],
-                    image_url=map_entry["image_url"],
-                    create_date=datetime.datetime.fromisoformat(map_entry["create_date"]),
-                    author_id=map_entry["author_id"],
-                    message_id=map_entry["message_id"],
+                    notes=map_entry.notes,
+                    image_url=map_entry.image_url,
+                    create_date=map_entry.create_date,
+                    author_id=map_entry.author_id,
+                    message_id=map_entry.message_id,
                 ))
 
         if len(maps_to_create) > 0:
@@ -225,30 +160,31 @@ class Session:
     class MapArtQueryBuilder:
         def __init__(self, session):
             self.session: sqlalchemy.ext.asyncio.AsyncSession = session
-            self.query = select(MapArtArchiveEntry).order_by(desc(MapArtArchiveEntry.width * MapArtArchiveEntry.height))
+            self.query = select(MapArtArchiveDBEntry).order_by(desc(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height), MapArtArchiveDBEntry.create_date)
 
         def add_size_filter(self, min_size):
-            self.query = self.query.where(MapArtArchiveEntry.width * MapArtArchiveEntry.height >= min_size)
+            self.query = self.query.where(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height >= min_size)
 
         def add_type_filter(self, type: MapArtType):
-            self.query = self.query.where(MapArtArchiveEntry.type == type)
+            self.query = self.query.where(MapArtArchiveDBEntry.type == type)
 
         def add_palette_filter(self, palette: MapArtPalette):
-            self.query = self.query.where(MapArtArchiveEntry.palette == palette)
+            self.query = self.query.where(MapArtArchiveDBEntry.palette == palette)
 
         def add_artist_filter(self, artist: str):
-            self.query = self.query.join(MapArtArchiveEntry.artists).where(MapArtArtist.name.ilike(artist))
+            self.query = self.query.join(MapArtArchiveDBEntry.artists).where(MapArtArtist.name.ilike(artist))
 
         def add_search_filter(self, search_term: str):
             self.query = (self.query
-            .join(MapArtArchiveEntry.artists)
+            .join(MapArtArchiveDBEntry.artists)
             .where(or_(
-                MapArtArchiveEntry.name.contains(search_term),
+                MapArtArchiveDBEntry.name.contains(search_term),
                 MapArtArtist.name.ilike(search_term),
-                MapArtArchiveEntry.palette.ilike(search_term),
-                MapArtArchiveEntry.type.ilike(search_term),
-                MapArtArchiveEntry.message_id == search_term
+                MapArtArchiveDBEntry.palette.ilike(search_term),
+                MapArtArchiveDBEntry.type.ilike(search_term),
+                MapArtArchiveDBEntry.message_id == search_term
             )))
 
         async def execute(self):
-            return (await self.session.execute(self.query)).scalars().unique().all()
+            db_entries = (await self.session.execute(self.query)).scalars().unique().all()
+            return [entry.as_entry() for entry in db_entries]

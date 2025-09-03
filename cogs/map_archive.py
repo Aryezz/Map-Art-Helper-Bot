@@ -1,5 +1,3 @@
-import datetime
-import io
 import json
 import logging
 import math
@@ -15,6 +13,7 @@ import ai
 import config
 import sqla_db
 from cogs import checks
+from cogs.views import MapEntityEditorView
 
 logger = logging.getLogger("discord.map_archive")
 
@@ -25,13 +24,33 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         self.archive_channel: discord.TextChannel = self.bot.get_channel(config.map_archive_channel_id)
         self.bot_log_channel: discord.TextChannel = self.bot.get_channel(config.bot_log_channel_id)
 
-        self.update_archive.start()
+        if not config.dev_mode:
+            self.update_archive.start()
 
     async def cog_load(self) -> None:
         await sqla_db.create_schema()
 
     def cog_unload(self):
         self.update_archive.cancel()
+
+    @commands.command()
+    async def edit(self, ctx: commands.Context, *search_terms):
+        async with sqla_db.Session() as db:
+            query_builder = db.get_query_builder()
+
+            for term in search_terms:
+                query_builder.add_search_filter(term)
+
+            results = await query_builder.execute()
+
+        if len(results) == 0:
+            await ctx.reply("no results for this search")
+            return
+        if len(results) > 1:
+            await ctx.reply("multiple results for this search")
+            return
+
+        await ctx.send(view=MapEntityEditorView(ctx.author, results[0]))
 
     @tasks.loop(minutes=5)
     async def update_archive(self):
@@ -76,26 +95,6 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
     @has_role("staff")
     @commands.command()
-    async def search(self, ctx, *search_terms):
-        async with sqla_db.Session() as db:
-            query_builder = db.get_query_builder()
-
-            for term in search_terms:
-                query_builder.add_search_filter(term)
-
-            results = await query_builder.execute()
-
-        json_data = [map_art.json for map_art in results]
-        json_output = json.dumps(json_data, indent=2)
-
-        if len(json_output) + 6 > 2000:
-            file = io.StringIO(json_output)
-            await ctx.send(file=discord.File(file, "results.json"))
-        else:
-            await ctx.send(f"```{json_output}```")
-
-    @has_role("staff")
-    @commands.command()
     async def update(self, ctx, *, map_entries: str):
         map_entries = map_entries.strip("`\n")
 
@@ -105,6 +104,8 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             await db.add_maps(entries)
 
         await ctx.send("done")
+
+    # TODO: add dedicated search command
 
     @checks.is_in_bot_channel()
     @commands.command(aliases=["largest"])
