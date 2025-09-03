@@ -3,9 +3,10 @@ import json
 import logging
 import math
 import traceback
-from typing import Set, List
+from typing import Set, List, Optional
 
 import discord
+from discord import DiscordException
 from discord.app_commands.checks import has_role
 from discord.ext import commands, tasks
 from discord.ext.commands import is_owner
@@ -29,8 +30,8 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     async def cog_load(self) -> None:
         await sqla_db.create_schema()
 
-        if not config.dev_mode:
-            self.update_archive.start()
+        #if not config.dev_mode:
+        self.update_archive.start()
 
     def cog_unload(self):
         self.update_archive.cancel()
@@ -55,8 +56,14 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
         await ctx.send(view=MapEntityEditorView(ctx.author, results[0]))
 
-    async def fix_attributes(self, entry: MapArtArchiveEntry):
-        message = await self.archive_channel.fetch_message(entry.message_id)
+    async def fix_attributes(self, entry: MapArtArchiveEntry) -> Optional[MapArtArchiveEntry]:
+        try:
+            message = await self.archive_channel.fetch_message(entry.message_id)
+        except DiscordException:
+            logger.error(f"failed to fetch message with id {entry.message_id}")
+            await self.bot_log_channel.send(f"failed to fetch message with id {entry.message_id}\n```txt\n{entry.__repr__()}\n```")
+
+            return None
 
         entry.author_id = message.author.id
         entry.create_date = message.created_at.replace(tzinfo=datetime.UTC)
@@ -83,7 +90,10 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
             final_entries: List[MapArtArchiveEntry] = []
             for entry in ai_processed:
-                final_entries.append(await self.fix_attributes(entry))
+                fixed = await self.fix_attributes(entry)
+
+                if fixed is not None:
+                    final_entries.append(fixed)
 
             async with sqla_db.Session() as db:
                 await db.add_maps(final_entries)

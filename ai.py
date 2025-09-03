@@ -1,7 +1,7 @@
 import datetime
 import json
 import logging
-from typing import List
+from typing import List, io
 
 import discord
 from google import genai
@@ -51,10 +51,11 @@ async def process_messages(messages: List[discord.Message]):
         "If the message contains user mentions, use the mentions to evaluate which users are mentioned where. "
         "If there are references to original artists or people preprocessing the image, you can ignore those, and just return the builders/printers/mappers as the artists. "
         "If no size is provided, you can assume 1x1. For all sizes you can assume width comes before height. "
-        "Use the messages created_at field for the create_date output field, and use the first attachment url for the image_url field. "
+        "The output should contain one entry for every message with one or more attachments. "
+        "Messages without attachments cannot ever represent an output entry, but might add relevant information for the next message containing attachments. "
+        "For the message_id field, always use the message ID of the message containing the attachment. Never return a message_id which is not contained in the input. "
         "If there are special notable additional infos in the message, add them to notes. "
-        "If no name is not provided, try to extract a suitable name from the attachment url, if the url contains no suitable name, use the name \"unknown\". Never use the file extension in the name. "
-        "In rare cases, multiple consecutive messages relate to a single map art entry, in those cases, use the message id of the message containing an image attachment.\n\n"
+        "If no name is not provided, try to extract a suitable name from the attachment url, if the url contains no suitable name, use the name \"unknown\". Never use the file extension in the name.\n\n"
     ) + json.dumps(message_dicts)
     generate_content_config = types.GenerateContentConfig(
         response_mime_type="application/json",
@@ -73,9 +74,11 @@ async def process_messages(messages: List[discord.Message]):
         response_parsed = response.parsed
 
         if response_parsed is not None:
+            logger.info(response.text)
+
             return response_parsed
         else:
-            logger.error("response did not contain key map_arts, returning empty list")
+            logger.error("response was empty, returning empty list")
             return []
     except errors.APIError as e:
         logger.error(f"Error Code {e.code} while processing")
