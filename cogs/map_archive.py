@@ -3,7 +3,7 @@ import json
 import logging
 import math
 import traceback
-from typing import Set
+from typing import Set, List
 
 import discord
 from discord.app_commands.checks import has_role
@@ -35,6 +35,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     def cog_unload(self):
         self.update_archive.cancel()
 
+    @has_role("staff")
     @commands.command()
     async def edit(self, ctx: commands.Context, *search_terms):
         async with sqla_db.Session() as db:
@@ -86,7 +87,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
                 await db.add_maps(final_entries)
 
             if not config.dev_mode:
-                await self.bot_log_channel.send(f"processed {len(messages)} messages, added {len(processed)} maps")
+                await self.bot_log_channel.send(f"processed {len(messages)} messages, added {len(final_entries)} maps")
         except BaseException as e:
             logger.error("error while processing maps", exc_info=e)
             if not config.dev_mode:
@@ -107,23 +108,9 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
         await ctx.send(f"```{json.dumps(processed, indent=2)}```")
 
-    @has_role("staff")
-    @commands.command()
-    async def update(self, ctx, *, map_entries: str):
-        map_entries = map_entries.strip("`\n")
-
-        entries = json.loads(map_entries)
-
-        async with sqla_db.Session() as db:
-            await db.add_maps(entries)
-
-        await ctx.send("done")
-
-    # TODO: add dedicated search command
-
     @checks.is_in_bot_channel()
-    @commands.command(aliases=["largest"])
-    async def biggest(self, ctx, *args):
+    @commands.command(aliases=["largest", "search"])
+    async def biggest(self, ctx: commands.Context, *args):
         """The biggest map art on 2b2t
 
         Usage: !!biggest [args]
@@ -136,24 +123,32 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             to filter out carpet-only maps, use `-c` or `-co`
         """
 
+        is_search = ctx.invoked_with == "search"
+
+        filter_args: List[str] = list(args)
+
         filter_flat_options: Set[str] = {"-f", "-flat"}
         filter_carpet_only_options: Set[str] = {"-c", "-co", "-carpet", "-carpetonly", "-carpet-only"}
-        legal_arguments: Set[str] = filter_flat_options | filter_carpet_only_options
 
-        # parse page num
+        filter_flat_only = False
+        filter_carpet_only = False
+        filter_artists = []
         page = 1
-        page_arg = [arg for arg in args if arg.isnumeric()]
-        if len(page_arg) == 1:
-            page = int(page_arg[0])
-        elif len(page_arg) > 1:
-            raise commands.BadArgument("Can only have one page number")
+        search_terms = []
 
-        filters = {arg for arg in args if arg in legal_arguments}
+        while len(filter_args) > 0:
+            arg = filter_args.pop(0)
 
-        name_filter = []
-        for i in range(len(args) - 1):  # only loop to second last argument, because name still comes after
-            if args[i] == "-n":
-                name_filter.append(args[i + 1])
+            if arg in filter_flat_options:
+                filter_flat_only = True
+            elif arg in filter_carpet_only_options:
+                filter_carpet_only = True
+            elif arg == "-n" and len(filter_args) >= 1:
+                filter_artists.append(filter_args.pop(0))
+            elif arg.isnumeric() and int(arg) < 100:
+                page = int(arg)
+            else:
+                search_terms.append(arg)
 
         title_note = []
 
@@ -164,50 +159,70 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             # => smaller maps only show up if you explicitly filter
             min_size = 32
 
-            if any(f in filters for f in filter_flat_options):
+            if filter_flat_only:
                 # when filtering for non-flat maps, the default cutoff is 8 maps
                 min_size = min(min_size, 8)
                 query_builder.add_type_filter(sqla_db.MapArtType.FLAT)
                 title_note.append("No flat maps")
 
-            if any(f in filters for f in filter_carpet_only_options):
+            if filter_carpet_only:
                 query_builder.add_palette_filter(sqla_db.MapArtPalette.CARPETONLY)
                 title_note.append("No carpet-only maps")
 
-            for artist in name_filter:
+            for artist in filter_artists:
                 query_builder.add_artist_filter(artist)
 
-            if name_filter:
+            if len(filter_artists) > 0:
                 # when filtering by artist, there is no minimum size
                 min_size = min(min_size, 0)
-                name_list = ", ".join(name_filter[:-1]) + " and " + name_filter[-1] if len(name_filter) > 1 else name_filter[0]
+                name_list = ", ".join(filter_artists[:-1]) + " and " + filter_artists[-1] if len(filter_artists) > 1 else filter_artists[0]
                 title_note.append(f"by {name_list}")
+
+            for search_term in search_terms:
+                query_builder.add_search_filter(search_term)
+
+            if len(search_terms) > 0 or is_search:
+                # when searching, there is no minimum size
+                min_size = 0
+
+            if is_search:
+                query_builder.order_by_date()
+            else:
+                query_builder.order_by_size()
 
             query_builder.add_size_filter(min_size)
 
-            found_maps = await query_builder.execute()
+            results = await query_builder.execute()
 
-        max_page = math.ceil(len(found_maps) / 10)
+        max_page = math.ceil(len(results) / 10)
 
         if 0 >= page or page > max_page:
             await ctx.reply(f"No results")
             return
 
-        maps = found_maps[(page - 1) * 10:page * 10]
+        page_entries = results[(page - 1) * 10:page * 10]
         ranks = {1: "🥇", 2: "🥈", 3: "🥉"}
 
-        message = f"# Biggest map-art ever built on 2b2t{(" (" + ", ".join(title_note) + ")") if title_note else ""}:\n"
+        if is_search:
+            title = "Search Results"
+        else:
+            title = f"Biggest map-art ever built on 2b2t{(" (" + ", ".join(title_note) + ")") if title_note else ""}"
 
-        for (i, bigmap) in enumerate(maps):
-            rank = i + 1 + (page - 1) * 10
-            message += f"**{ranks.get(rank, f'{rank}:')}** {bigmap.line}\n"
+        message = f"# {title}:\n"
+
+        for (i, entry) in enumerate(page_entries):
+            if is_search:
+                message += entry.line + "\n"
+            else:
+                rank = i + 1 + (page - 1) * 10
+                message += f"**{ranks.get(rank, f'{rank}:')}** {entry.line}\n"
 
         message += f"\n_Page {page}/{max_page}"
-        filters_joined = (' ' + ' '.join(filters)) if filters else ""
+        filters_joined = (' ' + ' '.join(set(args) - {str(page)})) if args else ""
         if page < max_page:
-            message += f" - use `!!biggest {page + 1}{filters_joined}` to see next page"
+            message += f" - use `{ctx.clean_prefix}{ctx.invoked_with} {page + 1}{filters_joined}` to see next page"
         elif page > 1:  # only show previous page hint if not on first page
-            message += f" - use `!!biggest {page - 1}{filters_joined}` to see previous page"
+            message += f" - use `{ctx.clean_prefix}{ctx.invoked_with} {page - 1}{filters_joined}` to see previous page"
         message += "_"  # end italics
 
         if len(message) <= 2000:

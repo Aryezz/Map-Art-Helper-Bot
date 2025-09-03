@@ -173,7 +173,13 @@ class Session:
     class MapArtQueryBuilder:
         def __init__(self, session):
             self.session: sqlalchemy.ext.asyncio.AsyncSession = session
-            self.query = select(MapArtArchiveDBEntry).order_by(desc(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height), MapArtArchiveDBEntry.create_date)
+            self.query = select(MapArtArchiveDBEntry)
+
+        def order_by_size(self):
+            self.query = self.query.order_by(desc(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height), MapArtArchiveDBEntry.create_date)
+
+        def order_by_date(self):
+            self.query = self.query.order_by(MapArtArchiveDBEntry.create_date)
 
         def add_size_filter(self, min_size):
             self.query = self.query.where(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height >= min_size)
