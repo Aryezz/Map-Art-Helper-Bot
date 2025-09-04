@@ -26,23 +26,17 @@ class MapArtLLMOutput(BaseModel):
 
 def serialize_message(message: discord.Message) -> Dict:
     msg_dict = {
-        "author": message.author.global_name,
+        "author": message.author.display_name,
         "author_id": message.author.id,
         "content": message.content,
         "message_id": message.id,
         "attachments": [a.url.split("?")[0].split("/")[-1] for a in message.attachments],
     }
 
-    if isinstance(message.author, discord.Member):
-        msg_dict["author_nick"] = message.author.nick
-
-    mentions = []
+    msg_dict["mentions"] = []
 
     for mention in message.mentions:
-        if isinstance(mention, discord.Member):
-            mentions.append({"name": mention.global_name, "nick": mention.nick, "id": mention.id})
-
-    msg_dict["mentions"] = mentions
+        msg_dict["mentions"].append({"name": mention.display_name, "id": mention.id})
 
     return msg_dict
 
@@ -62,8 +56,9 @@ async def process_messages(messages: List[discord.Message]) -> List[MapArtLLMOut
         "If there are references to original artists or people preprocessing the image, you can ignore those, and just return the builders/printers/mappers as the artists. "
         "If no size is provided, you can assume 1x1. For all sizes you can assume width comes before height. "
         "The output should contain one entry for every message with one or more attachments. "
-        "Messages without attachments cannot ever represent an output entry, but might add relevant information for the next message containing attachments. "
-        "For the message_id field, always use the message ID of the message containing the attachment. Never return a message_id which is not contained in the input. "
+        "Messages without attachments cannot ever represent an output entry, except if there are image links in the message content, which do not get recognized as attachments. "
+        "Messages without attachments or image links might add relevant information for following messages. "
+        "For the message_id field, always use the message ID of the message containing the image (link or attachment). Never return a message_id which is not contained in the input. "
         "If there are special notable additional infos in the message, add them to notes. "
         "If no name is not provided, try to extract a suitable name from the attachment url, if the url contains no suitable name, use the name \"unknown\". Never use the file extension in the name.\n\n"
     ) + json.dumps(message_dicts)
