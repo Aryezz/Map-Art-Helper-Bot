@@ -25,20 +25,14 @@ class MapArtLLMOutput(BaseModel):
 
 
 def serialize_message(message: discord.Message) -> Dict:
-    msg_dict = {
+    return {
         "author": message.author.display_name,
         "author_id": message.author.id,
         "content": message.content,
         "message_id": message.id,
         "attachments": [a.url.split("?")[0].split("/")[-1] for a in message.attachments],
+        "mentions": [{"name": mention.display_name, "id": mention.id} for mention in message.mentions],
     }
-
-    msg_dict["mentions"] = []
-
-    for mention in message.mentions:
-        msg_dict["mentions"].append({"name": mention.display_name, "id": mention.id})
-
-    return msg_dict
 
 
 async def process_messages(messages: List[discord.Message]) -> List[MapArtLLMOutput]:
