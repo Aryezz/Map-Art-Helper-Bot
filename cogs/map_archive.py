@@ -164,17 +164,25 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         page = 1
         search_terms = []
 
+        non_page_args = []
+
         while len(filter_args) > 0:
             arg = filter_args.pop(0)
+
+            if arg.isnumeric() and int(arg) < 1000:
+                page = int(arg)
+                continue
+
+            non_page_args.append(arg)
 
             if arg in filter_flat_options:
                 filter_flat_only = True
             elif arg in filter_carpet_only_options:
                 filter_carpet_only = True
             elif arg == "-n" and len(filter_args) >= 1:
-                filter_artists.append(filter_args.pop(0))
-            elif arg.isnumeric() and int(arg) < 100:
-                page = int(arg)
+                artist_name = filter_args.pop(0)
+                filter_artists.append(artist_name)
+                non_page_args.append(artist_name)
             else:
                 search_terms.append(arg)
 
@@ -246,7 +254,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
                 message += f"**{ranks.get(rank, f'{rank}:')}** {entry.line}\n"
 
         message += f"\n_Page {page}/{max_page}"
-        filters_joined = (' ' + ' '.join(set(args) - {str(page)})) if args else ""
+        filters_joined = (' ' + ' '.join(non_page_args)) if non_page_args else ""
         if page < max_page:
             message += f" - use `{ctx.clean_prefix}{ctx.invoked_with} {page + 1}{filters_joined}` to see next page"
         elif page > 1:  # only show previous page hint if not on first page
