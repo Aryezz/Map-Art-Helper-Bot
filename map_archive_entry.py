@@ -1,6 +1,6 @@
 import enum
+from dataclasses import dataclass
 
-from pydantic import BaseModel
 from datetime import datetime
 from typing import List, Optional
 
@@ -29,7 +29,8 @@ class MapArtPalette(enum.Enum):
         return self.value
 
 
-class MapArtArchiveEntry(BaseModel):
+@dataclass
+class MapArtArchiveEntry:
     width: int
     height: int
     map_type: MapArtType

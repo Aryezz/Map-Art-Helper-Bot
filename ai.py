@@ -1,26 +1,36 @@
-import datetime
 import json
 import logging
-from typing import List, io
+from typing import List, Dict
 
 import discord
 from google import genai
 from google.genai import types, errors
+from pydantic import BaseModel
 
 import config
-from map_archive_entry import MapArtArchiveEntry
+from map_archive_entry import MapArtType, MapArtPalette
 
 logger = logging.getLogger("discord.gemini")
 
 
-def serialize_message(message: discord.Message):
+class MapArtLLMOutput(BaseModel):
+    width: int
+    height: int
+    map_type: MapArtType
+    palette: MapArtPalette
+    name: str
+    artists: List[str]
+    notes: str
+    message_id: int
+
+
+def serialize_message(message: discord.Message) -> Dict:
     msg_dict = {
         "author": message.author.global_name,
         "author_id": message.author.id,
         "content": message.content,
         "message_id": message.id,
-        "attachments": [a.url for a in message.attachments],
-        "created_at": message.created_at.replace(tzinfo=datetime.UTC).isoformat(),
+        "attachments": [a.url.split("?")[0].split("/")[-1] for a in message.attachments],
     }
 
     if isinstance(message.author, discord.Member):
@@ -37,7 +47,7 @@ def serialize_message(message: discord.Message):
     return msg_dict
 
 
-async def process_messages(messages: List[discord.Message]):
+async def process_messages(messages: List[discord.Message]) -> List[MapArtLLMOutput]:
     client = genai.Client(
         api_key=config.gemini_token,
     )
@@ -59,7 +69,7 @@ async def process_messages(messages: List[discord.Message]):
     ) + json.dumps(message_dicts)
     generate_content_config = types.GenerateContentConfig(
         response_mime_type="application/json",
-        response_schema=list[MapArtArchiveEntry]
+        response_schema=list[MapArtLLMOutput]
     )
 
     try:

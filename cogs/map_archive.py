@@ -14,6 +14,7 @@ from discord.ext.commands import is_owner
 import ai
 import config
 import sqla_db
+from ai import MapArtLLMOutput
 from cogs import checks
 from cogs.views import MapEntityEditorView
 from map_archive_entry import MapArtArchiveEntry
@@ -30,8 +31,8 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     async def cog_load(self) -> None:
         await sqla_db.create_schema()
 
-        #if not config.dev_mode:
-        self.update_archive.start()
+        if not config.dev_mode:
+            self.update_archive.start()
 
     def cog_unload(self):
         self.update_archive.cancel()
@@ -56,15 +57,24 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
         await ctx.send(view=MapEntityEditorView(ctx.author, results[0]))
 
-    async def fix_attributes(self, entry: MapArtArchiveEntry) -> Optional[MapArtArchiveEntry]:
+    async def fix_attributes(self, entry: MapArtLLMOutput) -> Optional[MapArtArchiveEntry]:
         message = await self.archive_channel.fetch_message(entry.message_id)
 
-        entry.author_id = message.author.id
-        entry.create_date = message.created_at.replace(tzinfo=datetime.UTC)
-        entry.image_url = message.attachments[0].url if len(message.attachments) > 0 else ""
-        entry.flagged = any(attachment.is_spoiler() for attachment in message.attachments)
+        return MapArtArchiveEntry(
+            width=entry.width,
+            height=entry.height,
+            map_type=entry.map_type,
+            palette=entry.palette,
+            name=entry.name,
+            artists=entry.artists,
+            notes=entry.notes,
+            message_id=entry.message_id,
 
-        return entry
+            author_id=message.author.id,
+            create_date=message.created_at.replace(tzinfo=datetime.UTC),
+            image_url=message.attachments[0].url if len(message.attachments) > 0 else "",
+            flagged=any(attachment.is_spoiler() for attachment in message.attachments),
+        )
 
     @tasks.loop(minutes=5)
     async def update_archive(self):
@@ -80,7 +90,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             if len(messages) == 0:
                 return
 
-            ai_processed = await ai.process_messages(messages)
+            ai_processed: List[MapArtLLMOutput] = await ai.process_messages(messages)
 
             try:
                 final_entries: List[MapArtArchiveEntry] = [await self.fix_attributes(entry) for entry in ai_processed]
@@ -94,10 +104,13 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
             if not config.dev_mode:
                 await self.bot_log_channel.send(f"processed {len(messages)} messages, added {len(final_entries)} maps")
-        except BaseException as e:
-            logger.error("error while processing maps", exc_info=e)
+        except BaseException as error:
+            logger.error("error while processing maps", exc_info=error)
             if not config.dev_mode:
-                await self.bot_log_channel.send(f"error while processing maps: \n```{e}\n{traceback.format_exc()}```")
+                tb = "".join(traceback.format_exception(type(error), error, error.__traceback__))
+                message = f"An error occurred while importing maps from the archive:\n```py\n{tb}\n```"
+
+                await self.bot_log_channel.send(message)
 
     @update_archive.before_loop
     async def before_updating_archive(self):
@@ -107,12 +120,21 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     @commands.command()
     async def import_map(self, ctx, msg_id: int):
         msg = await self.archive_channel.fetch_message(msg_id)
-        processed = await ai.process_messages([msg])
+
+        ai_processed: List[MapArtLLMOutput] = await ai.process_messages([msg])
+
+        try:
+            final_entries: List[MapArtArchiveEntry] = [await self.fix_attributes(entry) for entry in ai_processed]
+        except DiscordException:
+            logger.error("error in LLM returned data, skipping")
+            await ctx.send.send("error in LLM returned data, skipping")
+            return
 
         async with sqla_db.Session() as db:
-            await db.add_maps(processed)
+            await db.add_maps(final_entries)
 
-        await ctx.send(f"```{json.dumps(processed, indent=2)}```")
+            if not config.dev_mode:
+                await ctx.send(f"processed 1 message, added {len(final_entries)} maps")
 
     @checks.is_in_bot_channel()
     @commands.command(aliases=["largest", "search"])

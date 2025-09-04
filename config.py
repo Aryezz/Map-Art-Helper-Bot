@@ -16,4 +16,4 @@ channel_blacklist = loads(os.environ["BLACKLIST"])  # List of channels IDs to ig
 # replace channel ID placeholders
 
 # set DEV_MODE to 1 to suppress some stuff
-dev_mode = bool(os.environ.get("DEV_MODE", False))
+dev_mode = bool(int(os.environ.get("DEV_MODE", 0)))
