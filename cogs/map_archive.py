@@ -26,6 +26,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         self.bot: discord.Client = bot
         self.archive_channel: discord.TextChannel = self.bot.get_channel(config.map_archive_channel_id)
         self.bot_log_channel: discord.TextChannel = self.bot.get_channel(config.bot_log_channel_id)
+        self.cancel_queue: set[int] = set()
 
     async def cog_load(self) -> None:
         await sqla_db.create_schema()
@@ -37,7 +38,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         self.update_archive.cancel()
 
     @has_role("staff")
-    @commands.command()
+    @commands.command(aliases=["e", "ea", "editall"])
     async def edit(self, ctx: commands.Context, *search_terms):
         async with sqla_db.Session() as db:
             query_builder = db.get_query_builder()
@@ -50,11 +51,27 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         if len(results) == 0:
             await ctx.reply("no results for this search")
             return
-        if len(results) > 1:
-            await ctx.reply("multiple results for this search")
-            return
+        if ctx.invoked_with in ("e", "edit"):
+            # normal edit semantics
+            if len(results) > 1:
+                await ctx.reply(f"multiple results for this search, use `{ctx.clean_prefix}editall` to edit multiple maps")
+                return
 
-        await ctx.send(view=MapEntityEditorView(ctx.author, results[0]))
+            await ctx.send(view=MapEntityEditorView(ctx.author, results[0]))
+        elif ctx.invoked_with in ("ea", "editall"):
+            # mass edit semantics
+            for entry in results:
+                if ctx.author.id in self.cancel_queue:
+                    self.cancel_queue.remove(ctx.author.id)
+                    return
+                editor_view = MapEntityEditorView(ctx.author, entry)
+                await ctx.send(view=editor_view)
+                await editor_view.wait()
+
+    @has_role("staff")
+    @commands.command()
+    async def cancel(self, ctx):
+        self.cancel_queue.add(ctx.author.id)
 
     async def fix_attributes(self, entry: MapArtLLMOutput) -> Optional[MapArtArchiveEntry]:
         message = await self.archive_channel.fetch_message(entry.message_id)
