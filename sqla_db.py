@@ -186,10 +186,10 @@ class MapArtQueryBuilder:
         self.query = self.query.where(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height >= min_size)
 
     def add_type_filter(self, type: MapArtType):
-        self.query = self.query.where(MapArtArchiveDBEntry.type == type)
+        self.query = self.query.where(MapArtArchiveDBEntry.type != type)
 
     def add_palette_filter(self, palette: MapArtPalette):
-        self.query = self.query.where(MapArtArchiveDBEntry.palette == palette)
+        self.query = self.query.where(MapArtArchiveDBEntry.palette != palette)
 
     def add_artist_filter(self, artist: str):
         self.query = self.query.join(MapArtArchiveDBEntry.artists).where(MapArtArtist.name.ilike(artist))
