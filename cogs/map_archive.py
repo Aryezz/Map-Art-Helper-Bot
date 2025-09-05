@@ -159,6 +159,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
         filter_flat_only = False
         filter_carpet_only = False
+        filter_duplicates = False
         filter_artists = []
         page = 1
         search_terms = []
@@ -178,6 +179,8 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
                 filter_flat_only = True
             elif arg in filter_carpet_only_options:
                 filter_carpet_only = True
+            elif arg == "-dup":
+                filter_duplicates = True
             elif arg == "-n" and len(filter_args) >= 1:
                 artist_name = filter_args.pop(0)
                 filter_artists.append(artist_name)
@@ -203,6 +206,10 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             if filter_carpet_only:
                 query_builder.add_palette_filter(sqla_db.MapArtPalette.CARPETONLY)
                 title_note.append("No carpet-only maps")
+
+            if filter_duplicates:
+                query_builder.add_duplicate_filter()
+                title_note.append("Duplicates")
 
             for artist in filter_artists:
                 query_builder.add_artist_filter(artist)

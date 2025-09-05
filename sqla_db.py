@@ -91,8 +91,8 @@ class Session:
         await self.session.commit()
         await self.session.close()
 
-    def get_query_builder(self):
-        return self.MapArtQueryBuilder(self.session)
+    def get_query_builder(self) -> 'MapArtQueryBuilder':
+        return MapArtQueryBuilder(self.session)
 
     async def get_latest_create_date(self) -> datetime.datetime:
         query = select(func.max(MapArtArchiveDBEntry.create_date))
@@ -170,40 +170,44 @@ class Session:
         for db_entry in db_entries:
             await self.session.delete(db_entry)
 
-    class MapArtQueryBuilder:
-        def __init__(self, session):
-            self.session: sqlalchemy.ext.asyncio.AsyncSession = session
-            self.query = select(MapArtArchiveDBEntry)
 
-        def order_by_size(self):
-            self.query = self.query.order_by(desc(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height), MapArtArchiveDBEntry.create_date)
+class MapArtQueryBuilder:
+    def __init__(self, session):
+        self.session: sqlalchemy.ext.asyncio.AsyncSession = session
+        self.query = select(MapArtArchiveDBEntry)
 
-        def order_by_date(self):
-            self.query = self.query.order_by(MapArtArchiveDBEntry.create_date)
+    def order_by_size(self):
+        self.query = self.query.order_by(desc(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height), MapArtArchiveDBEntry.create_date)
 
-        def add_size_filter(self, min_size):
-            self.query = self.query.where(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height >= min_size)
+    def order_by_date(self):
+        self.query = self.query.order_by(MapArtArchiveDBEntry.create_date)
 
-        def add_type_filter(self, type: MapArtType):
-            self.query = self.query.where(MapArtArchiveDBEntry.type == type)
+    def add_size_filter(self, min_size):
+        self.query = self.query.where(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height >= min_size)
 
-        def add_palette_filter(self, palette: MapArtPalette):
-            self.query = self.query.where(MapArtArchiveDBEntry.palette == palette)
+    def add_type_filter(self, type: MapArtType):
+        self.query = self.query.where(MapArtArchiveDBEntry.type == type)
 
-        def add_artist_filter(self, artist: str):
-            self.query = self.query.join(MapArtArchiveDBEntry.artists).where(MapArtArtist.name.ilike(artist))
+    def add_palette_filter(self, palette: MapArtPalette):
+        self.query = self.query.where(MapArtArchiveDBEntry.palette == palette)
 
-        def add_search_filter(self, search_term: str):
-            self.query = (self.query
-            .join(MapArtArchiveDBEntry.artists)
-            .where(or_(
-                MapArtArchiveDBEntry.name.contains(search_term),
-                MapArtArtist.name.ilike(search_term),
-                MapArtArchiveDBEntry.palette.ilike(search_term),
-                MapArtArchiveDBEntry.type.ilike(search_term),
-                MapArtArchiveDBEntry.message_id == search_term
-            )))
+    def add_artist_filter(self, artist: str):
+        self.query = self.query.join(MapArtArchiveDBEntry.artists).where(MapArtArtist.name.ilike(artist))
 
-        async def execute(self):
-            db_entries = (await self.session.execute(self.query)).scalars().unique().all()
-            return [entry.as_entry() for entry in db_entries]
+    def add_duplicate_filter(self):
+        self.query = self.query.where(MapArtArchiveDBEntry.message_id.in_(select(MapArtArchiveDBEntry.message_id).group_by(MapArtArchiveDBEntry.message_id).having(func.count() >= 2)))
+
+    def add_search_filter(self, search_term: str):
+        self.query = (self.query
+        .join(MapArtArchiveDBEntry.artists)
+        .where(or_(
+            MapArtArchiveDBEntry.name.contains(search_term),
+            MapArtArtist.name.ilike(search_term),
+            MapArtArchiveDBEntry.palette.ilike(search_term),
+            MapArtArchiveDBEntry.type.ilike(search_term),
+            MapArtArchiveDBEntry.message_id == search_term
+        )))
+
+    async def execute(self):
+        db_entries = (await self.session.execute(self.query)).scalars().unique().all()
+        return [entry.as_entry() for entry in db_entries]
