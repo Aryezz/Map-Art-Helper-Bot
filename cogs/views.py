@@ -276,10 +276,12 @@ class MapEntityEditorView(BaseView):
     def update_view(self):
         self.clear_items()
 
+        thumbnail_url = self.entry.image_url or "https://minecraft.wiki/images/Barrier_%28held%29_JE2_BE2.png"
+
         container = ui.Container()
         header = ui.Section(
-            ui.TextDisplay("# Map Entry Settings <:mcmap:349454913526562816>"),
-            accessory=ui.Thumbnail(self.entry.image_url, spoiler=self.entry.flagged)
+            ui.TextDisplay(f"# Map Entry Settings <:mcmap:349454913526562816>\n[Jump to message]({self.entry.link})"),
+            accessory=ui.Thumbnail(thumbnail_url)
         )
         container.add_item(header)
 
@@ -337,13 +339,20 @@ class MapEntityEditorView(BaseView):
         self.stop()
         await interaction.delete_original_response()
 
+    @row.button(label='Cancel', style=discord.ButtonStyle.grey)
+    async def cancel_button(self, interaction: discord.Interaction[Bot], button: ui.Button) -> None:
+        await interaction.response.edit_message(view=self)
+        await interaction.followup.send(f'Edit cancelled', ephemeral=True)
+        self.stop()
+        await interaction.delete_original_response()
+
     async def delete_entry(self, interaction: discord.Interaction[Bot]) -> None:
         await interaction.response.edit_message(view=self)
 
         async with sqla_db.Session() as db:
             await db.delete_maps([self.entry])
 
-        await interaction.followup.send(f'Map art deleted', ephemeral=True)
+        await interaction.followup.send(f'Map art deleted, [Link]({self.entry.link})')
         self.stop()
         await interaction.delete_original_response()
 
