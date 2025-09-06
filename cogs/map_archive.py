@@ -5,7 +5,7 @@ import traceback
 from typing import Set, List, Optional
 
 import discord
-from discord import DiscordException
+from discord import DiscordException, ui
 from discord.app_commands.checks import has_role
 from discord.ext import commands, tasks
 from discord.ext.commands import is_owner
@@ -252,6 +252,35 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             query_builder.add_size_filter(min_size)
 
             results = await query_builder.execute()
+
+        if len(results) == 1:
+            entry = results[0]
+
+            view = ui.LayoutView()
+            thumbnail_url = entry.image_url or "https://minecraft.wiki/images/Barrier_%28held%29_JE2_BE2.png"
+
+            header = ui.Section(
+                ui.TextDisplay(f"# {entry.name}\n[Jump to message in archive]({entry.link})"),
+                accessory=ui.Thumbnail(thumbnail_url)
+            )
+            view.add_item(header)
+
+            view.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
+
+            view.add_item(
+                    ui.TextDisplay(
+                        f"### Name\n{entry.name}\n" +
+                        f"### Size\n{entry.width} x {entry.height} ({entry.total_maps} {"map" if entry.total_maps == 1 else "maps"})\n" +
+                        f"### Artists\n" + "\n".join(f"* {artist}" for artist in entry.artists) + "\n" +
+                        f"### Type\n{entry.map_type.value}\n"
+                        f"### Palette\n{entry.palette.value}\n"
+                        f"### Notes\n" +
+                        ("\n".join("> " + line for line in entry.notes.split("\n")) if entry.notes else "-")
+                    )
+            )
+
+            await ctx.send(view=view)
+            return
 
         max_page = math.ceil(len(results) / 10)
 
