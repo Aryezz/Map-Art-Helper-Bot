@@ -86,9 +86,9 @@ class MapAttributeEditorModal(discord.ui.Modal, title="Map Attribute Editor"):
         super().__init__()
         self.view = view
 
-        self.name.default = str(self.view.entry.name)
-        self.artists.default = ", ".join(self.view.entry.artists)
-        self.notes.default = str(self.view.entry.notes)
+        self.name.default = self.view.entry.name.replace("\n", "")
+        self.artists.default = ", ".join(self.view.entry.artists).replace("\n", "")
+        self.notes.default = self.view.entry.notes
 
         self.width.default = str(self.view.entry.width)
         self.height.default = str(self.view.entry.height)
