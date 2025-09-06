@@ -124,7 +124,6 @@ def get_detail_view(entry):
     view.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
     view.add_item(
         ui.TextDisplay(
-            f"### Name\n{entry.name}\n" +
             f"### Size\n{entry.width} x {entry.height} ({entry.total_maps} {"map" if entry.total_maps == 1 else "maps"})\n" +
             f"### Artists\n" + "\n".join(f"* {artist}" for artist in entry.artists) + "\n" +
             f"### Type\n{entry.map_type.value}\n"
@@ -309,16 +308,16 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
         search_results = await search_entries(args, order_by="date", min_size=0)
 
-        if not search_results.page_valid():
-            await ctx.reply(f"Invalid Page")
-            return
-
         if len(search_results.results) == 0:
             await ctx.reply(f"No results")
             return
 
         if len(search_results.results) == 1:
             await ctx.send(view=get_detail_view(search_results.results[0]))
+            return
+
+        if not search_results.page_valid():
+            await ctx.reply(f"Invalid Page, select a page between 1 and {search_results.max_page()}")
             return
 
         message = await format_entry_list(ctx, search_results, title="Search Results")
@@ -348,16 +347,16 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
         search_results = await search_entries(args, order_by="size", min_size=32)
 
-        if not search_results.page_valid():
-            await ctx.reply(f"Invalid Page")
-            return
-
         if len(search_results.results) == 0:
             await ctx.reply(f"No results")
             return
 
         if len(search_results.results) == 1:
             await ctx.send(view=get_detail_view(search_results.results[0]))
+            return
+
+        if not search_results.page_valid():
+            await ctx.reply(f"Invalid Page")
             return
 
         title = "Biggest map-art ever built on 2b2t"
