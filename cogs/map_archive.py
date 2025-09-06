@@ -2,7 +2,8 @@ import datetime
 import logging
 import math
 import traceback
-from typing import Set, List, Optional
+from dataclasses import dataclass, field
+from typing import Optional, Literal, Callable
 
 import discord
 from discord import DiscordException, ui
@@ -19,6 +20,139 @@ from cogs.views import MapEntityEditorView
 from map_archive_entry import MapArtArchiveEntry
 
 logger = logging.getLogger("discord.map_archive")
+
+
+@dataclass
+class SearchResults:
+    filter_flat_only: bool = False
+    filter_carpet_only: bool = False
+    filter_duplicates: bool = False
+    filter_artists: list[str] = field(default_factory=list)
+    page: int = 1
+    search_terms: list[str] = field(default_factory=list)
+    non_page_args: list[str] = field(default_factory=list)
+    results: list[MapArtArchiveEntry] = field(default_factory=list)
+
+    def max_page(self, page_size: int = 10):
+        return math.ceil(len(self.results) / page_size)
+
+    def page_valid(self, page_size: int = 10):
+        return 0 < self.page <= self.max_page(page_size)
+
+
+async def search_entries(query, order_by: Literal["size"] | Literal["date"] = "size",
+                         min_size: int = 32) -> SearchResults:
+    filter_args: list[str] = list(query)
+
+    filter_flat_options: set[str] = {"-f", "-flat"}
+    filter_carpet_only_options: set[str] = {"-c", "-co", "-carpet", "-carpetonly", "-carpet-only"}
+
+    results = SearchResults()
+
+    while len(filter_args) > 0:
+        arg = filter_args.pop(0)
+
+        if arg.isnumeric() and int(arg) < 1000:
+            results.page = int(arg)
+            continue
+
+        results.non_page_args.append(arg)
+
+        if arg in filter_flat_options:
+            results.filter_flat_only = True
+        elif arg in filter_carpet_only_options:
+            results.filter_flat_only = True
+        elif arg == "-dup":
+            results.filter_flat_only = True
+        elif arg == "-n" and len(filter_args) >= 1:
+            artist_name = filter_args.pop(0)
+            results.filter_artists.append(artist_name)
+            results.non_page_args.append(artist_name)
+        else:
+            results.search_terms.append(arg)
+
+    async with sqla_db.Session() as db:
+        query_builder = db.get_query_builder()
+
+        if results.filter_flat_only:
+            # when filtering for non-flat maps, the default cutoff is 8 maps
+            min_size = min(min_size, 8)
+            query_builder.add_type_filter(sqla_db.MapArtType.FLAT)
+
+        if results.filter_carpet_only:
+            query_builder.add_palette_filter(sqla_db.MapArtPalette.CARPETONLY)
+
+        if results.filter_duplicates:
+            query_builder.add_duplicate_filter()
+
+        for artist in results.filter_artists:
+            query_builder.add_artist_filter(artist)
+
+        if len(results.filter_artists) > 0 or len(results.search_terms) > 0:
+            # when filtering by artist, there is no minimum size
+            min_size = min(min_size, 0)
+
+        for search_term in results.search_terms:
+            query_builder.add_search_filter(search_term)
+
+        if order_by == "date":
+            query_builder.order_by_date()
+        elif order_by == "size":
+            query_builder.order_by_size()
+
+        query_builder.add_size_filter(min_size)
+
+        results.results = await query_builder.execute()
+
+    return results
+
+
+def get_detail_view(entry):
+    view = ui.LayoutView()
+    thumbnail_url = entry.image_url or "https://minecraft.wiki/images/Barrier_%28held%29_JE2_BE2.png"
+    header = ui.Section(
+        ui.TextDisplay(f"# {entry.name}\n[Jump to message in archive]({entry.link})"),
+        accessory=ui.Thumbnail(thumbnail_url)
+    )
+    view.add_item(header)
+    view.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
+    view.add_item(
+        ui.TextDisplay(
+            f"### Name\n{entry.name}\n" +
+            f"### Size\n{entry.width} x {entry.height} ({entry.total_maps} {"map" if entry.total_maps == 1 else "maps"})\n" +
+            f"### Artists\n" + "\n".join(f"* {artist}" for artist in entry.artists) + "\n" +
+            f"### Type\n{entry.map_type.value}\n"
+            f"### Palette\n{entry.palette.value}\n"
+            f"### Notes\n" +
+            ("\n".join("> " + line for line in entry.notes.split("\n")) if entry.notes else "-")
+        )
+    )
+    return view
+
+
+async def format_entry_list(ctx: commands.Context, search_results: SearchResults, title: str,
+                            line_formatter: Callable[[int, MapArtArchiveEntry], str] = lambda _,
+                                                                                              entry: entry.line) -> str:
+    max_page = math.ceil(len(search_results.results) / 10)
+
+    page_entries = search_results.results[(search_results.page - 1) * 10:search_results.page * 10]
+
+    message = f"# {title}:\n"
+
+    lines = [line_formatter(i, entry) for (i, entry) in enumerate(page_entries)]
+    message += "\n".join(lines)
+
+    page_info = f"Page {search_results.page}/{max_page}"
+    command_help = ""
+
+    filters_joined = (' ' + ' '.join(search_results.non_page_args)) if search_results.non_page_args else ""
+    if search_results.page < max_page:
+        command_help = f" - use `{ctx.clean_prefix}{ctx.invoked_with} {search_results.page + 1}{filters_joined}` to see next page"
+    elif search_results.page > 1:  # only show previous page hint if not on first page
+        command_help = f" - use `{ctx.clean_prefix}{ctx.invoked_with} {search_results.page - 1}{filters_joined}` to see previous page"
+
+    message += f"\n\n_{page_info} {command_help}_"
+    return message
 
 
 class MapArchiveCommands(commands.Cog, name="Map Archive"):
@@ -54,7 +188,8 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         if ctx.invoked_with in ("e", "edit"):
             # normal edit semantics
             if len(results) > 1:
-                await ctx.reply(f"multiple results for this search, use `{ctx.clean_prefix}editall` to edit multiple maps")
+                await ctx.reply(
+                    f"multiple results for this search, use `{ctx.clean_prefix}editall` to edit multiple maps")
                 return
 
             await ctx.send(view=MapEntityEditorView(ctx.author, results[0]))
@@ -99,17 +234,18 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
                 fetch_from_timestamp = await db.get_latest_create_date()
 
             if fetch_from_timestamp is not None:
-                messages = [message async for message in self.archive_channel.history(limit=50, after=fetch_from_timestamp, oldest_first=True)]
+                messages = [message async for message in
+                            self.archive_channel.history(limit=50, after=fetch_from_timestamp, oldest_first=True)]
             else:
                 messages = [message async for message in self.archive_channel.history(limit=50, oldest_first=True)]
 
             if len(messages) == 0:
                 return
 
-            ai_processed: List[MapArtLLMOutput] = await ai.process_messages(messages)
+            ai_processed: list[MapArtLLMOutput] = await ai.process_messages(messages)
 
             try:
-                final_entries: List[MapArtArchiveEntry] = [await self.fix_attributes(entry) for entry in ai_processed]
+                final_entries: list[MapArtArchiveEntry] = [await self.fix_attributes(entry) for entry in ai_processed]
             except DiscordException:
                 logger.error("error in LLM returned data, skipping")
                 await self.bot_log_channel.send("error in LLM returned data, skipping")
@@ -137,10 +273,10 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     async def import_map(self, ctx, msg_id: int):
         msg = await self.archive_channel.fetch_message(msg_id)
 
-        ai_processed: List[MapArtLLMOutput] = await ai.process_messages([msg])
+        ai_processed: list[MapArtLLMOutput] = await ai.process_messages([msg])
 
         try:
-            final_entries: List[MapArtArchiveEntry] = [await self.fix_attributes(entry) for entry in ai_processed]
+            final_entries: list[MapArtArchiveEntry] = [await self.fix_attributes(entry) for entry in ai_processed]
         except DiscordException:
             logger.error("error in LLM returned data, skipping")
             await ctx.send.send("error in LLM returned data, skipping")
@@ -153,7 +289,46 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
                 await ctx.send(f"processed 1 message, added {len(final_entries)} maps")
 
     @checks.is_in_bot_channel()
-    @commands.command(aliases=["largest", "search"])
+    @commands.command()
+    async def search(self, ctx: commands.Context, *args):
+        """Search map arts in the archive
+
+        Usage: !!search [args]
+
+        Parameters
+        ----------
+        args : list, optional
+            Page and filters to apply to the list of maps.
+            To filter out flat maps, use `-f`,
+            to filter out carpet-only maps, use `-c` or `-co`,
+            to filter maps by a specific artist, use `-n <name>`
+        """
+
+        search_results = await search_entries(args, order_by="date", min_size=0)
+
+        if not search_results.page_valid():
+            await ctx.reply(f"Invalid Page")
+            return
+
+        if len(search_results.results) == 0:
+            await ctx.reply(f"No results")
+            return
+
+        if len(search_results.results) == 1:
+            await ctx.send(view=get_detail_view(search_results.results[0]))
+            return
+
+        message = await format_entry_list(ctx, search_results, title="Search Results")
+
+        if len(message) <= 2000:
+            await ctx.send(message)
+        else:
+            lines = message.split("\n")
+            await ctx.send("\n".join(lines[:6]))
+            await ctx.send("\n".join(lines[6:]))
+
+    @checks.is_in_bot_channel()
+    @commands.command(aliases=["largest"])
     async def biggest(self, ctx: commands.Context, *args):
         """The biggest map art on 2b2t
 
@@ -164,154 +339,46 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         args : list, optional
             Page and filters to apply to the list of maps.
             To filter out flat maps, use `-f`,
-            to filter out carpet-only maps, use `-c` or `-co`
+            to filter out carpet-only maps, use `-c` or `-co`,
+            to filter maps by a specific artist, use `-n <name>`
         """
 
-        is_search = ctx.invoked_with == "search"
+        search_results = await search_entries(args, order_by="size", min_size=32)
 
-        filter_args: List[str] = list(args)
-
-        filter_flat_options: Set[str] = {"-f", "-flat"}
-        filter_carpet_only_options: Set[str] = {"-c", "-co", "-carpet", "-carpetonly", "-carpet-only"}
-
-        filter_flat_only = False
-        filter_carpet_only = False
-        filter_duplicates = False
-        filter_artists = []
-        page = 1
-        search_terms = []
-
-        non_page_args = []
-
-        while len(filter_args) > 0:
-            arg = filter_args.pop(0)
-
-            if arg.isnumeric() and int(arg) < 1000:
-                page = int(arg)
-                continue
-
-            non_page_args.append(arg)
-
-            if arg in filter_flat_options:
-                filter_flat_only = True
-            elif arg in filter_carpet_only_options:
-                filter_carpet_only = True
-            elif arg == "-dup":
-                filter_duplicates = True
-            elif arg == "-n" and len(filter_args) >= 1:
-                artist_name = filter_args.pop(0)
-                filter_artists.append(artist_name)
-                non_page_args.append(artist_name)
-            else:
-                search_terms.append(arg)
-
-        title_note = []
-
-        async with sqla_db.Session() as db:
-            query_builder = db.get_query_builder()
-
-            # without any filters, the cutoff is 32 individual maps
-            # => smaller maps only show up if you explicitly filter
-            min_size = 32
-
-            if filter_flat_only:
-                # when filtering for non-flat maps, the default cutoff is 8 maps
-                min_size = min(min_size, 8)
-                query_builder.add_type_filter(sqla_db.MapArtType.FLAT)
-                title_note.append("No flat maps")
-
-            if filter_carpet_only:
-                query_builder.add_palette_filter(sqla_db.MapArtPalette.CARPETONLY)
-                title_note.append("No carpet-only maps")
-
-            if filter_duplicates:
-                query_builder.add_duplicate_filter()
-                title_note.append("Duplicates")
-
-            for artist in filter_artists:
-                query_builder.add_artist_filter(artist)
-
-            if len(filter_artists) > 0:
-                # when filtering by artist, there is no minimum size
-                min_size = min(min_size, 0)
-                name_list = ", ".join(filter_artists[:-1]) + " and " + filter_artists[-1] if len(filter_artists) > 1 else filter_artists[0]
-                title_note.append(f"by {name_list}")
-
-            for search_term in search_terms:
-                query_builder.add_search_filter(search_term)
-
-            if len(search_terms) > 0 or is_search:
-                # when searching, there is no minimum size
-                min_size = 0
-
-            if is_search:
-                query_builder.order_by_date()
-            else:
-                query_builder.order_by_size()
-
-            query_builder.add_size_filter(min_size)
-
-            results = await query_builder.execute()
-
-        if len(results) == 1:
-            entry = results[0]
-
-            view = ui.LayoutView()
-            thumbnail_url = entry.image_url or "https://minecraft.wiki/images/Barrier_%28held%29_JE2_BE2.png"
-
-            header = ui.Section(
-                ui.TextDisplay(f"# {entry.name}\n[Jump to message in archive]({entry.link})"),
-                accessory=ui.Thumbnail(thumbnail_url)
-            )
-            view.add_item(header)
-
-            view.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
-
-            view.add_item(
-                    ui.TextDisplay(
-                        f"### Name\n{entry.name}\n" +
-                        f"### Size\n{entry.width} x {entry.height} ({entry.total_maps} {"map" if entry.total_maps == 1 else "maps"})\n" +
-                        f"### Artists\n" + "\n".join(f"* {artist}" for artist in entry.artists) + "\n" +
-                        f"### Type\n{entry.map_type.value}\n"
-                        f"### Palette\n{entry.palette.value}\n"
-                        f"### Notes\n" +
-                        ("\n".join("> " + line for line in entry.notes.split("\n")) if entry.notes else "-")
-                    )
-            )
-
-            await ctx.send(view=view)
+        if not search_results.page_valid():
+            await ctx.reply(f"Invalid Page")
             return
 
-        max_page = math.ceil(len(results) / 10)
-
-        if 0 >= page or page > max_page:
+        if len(search_results.results) == 0:
             await ctx.reply(f"No results")
             return
 
-        page_entries = results[(page - 1) * 10:page * 10]
+        if len(search_results.results) == 1:
+            await ctx.send(view=get_detail_view(search_results.results[0]))
+            return
+
+        title = "Biggest map-art ever built on 2b2t"
+        title_note = []
+
+        if search_results.filter_flat_only:
+            title_note.append("No flat maps")
+
+        if search_results.filter_carpet_only:
+            title_note.append("No carpet-only maps")
+
+        if search_results.filter_duplicates:
+            title_note.append("Duplicates")
+
+        if title_note:
+            title = f"{title} ({", ".join(title_note)})"
+
         ranks = {1: "🥇", 2: "🥈", 3: "🥉"}
 
-        if is_search:
-            title = "Search Results"
-        else:
-            title = f"Biggest map-art ever built on 2b2t{(" (" + ", ".join(title_note) + ")") if title_note else ""}"
+        def rank_formatter(i: int, entry: MapArtArchiveEntry):
+            rank = i + 1 + (search_results.page - 1) * 10
+            return f"**{ranks.get(rank, f'{rank}:')}** {entry.line}"
 
-        message = f"# {title}:\n"
-
-        for (i, entry) in enumerate(page_entries):
-            if is_search:
-                message += entry.line + "\n"
-            else:
-                rank = i + 1 + (page - 1) * 10
-                message += f"**{ranks.get(rank, f'{rank}:')}** {entry.line}\n"
-
-        message += f"\n_Page {page}/{max_page}"
-        filters_joined = (' ' + ' '.join(non_page_args)) if non_page_args else ""
-        if page < max_page:
-            message += f" - use `{ctx.clean_prefix}{ctx.invoked_with} {page + 1}{filters_joined}` to see next page"
-        elif page > 1:  # only show previous page hint if not on first page
-            message += f" - use `{ctx.clean_prefix}{ctx.invoked_with} {page - 1}{filters_joined}` to see previous page"
-        message += "_"  # end italics
+        message = await format_entry_list(ctx, search_results, title=title, line_formatter=rank_formatter)
 
         if len(message) <= 2000:
             await ctx.send(message)
