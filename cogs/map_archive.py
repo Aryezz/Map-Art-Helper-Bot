@@ -42,7 +42,13 @@ class SearchResults:
 
 async def search_entries(query, order_by: Literal["size"] | Literal["date"] = "size",
                          min_size: int = 32) -> SearchResults:
-    filter_args: list[str] = list(query)
+    filter_args: list[str] = []
+
+    for term in query:
+        if isinstance(term, discord.Message):
+            filter_args.append(str(term.id))
+        else:
+            filter_args.append(term)
 
     filter_flat_options: set[str] = {"-f", "-flat"}
     filter_carpet_only_options: set[str] = {"-c", "-co", "-carpet", "-carpetonly", "-carpet-only"}
@@ -233,7 +239,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
     @has_role("staff")
     @commands.command(aliases=["e", "ea", "editall"])
-    async def edit(self, ctx: commands.Context, *search_terms):
+    async def edit(self, ctx: commands.Context, search_terms: commands.Greedy[discord.Message | str]):
         search_results = await search_entries(search_terms, order_by="date", min_size=0)
         results = search_results.results[(search_results.page - 1) * 10:]
 
@@ -267,8 +273,8 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
     @is_owner()
     @commands.command()
-    async def import_map(self, ctx, msg_id: int):
-        msg = await self.archive_channel.fetch_message(msg_id)
+    async def import_map(self, ctx, message: discord.Message):
+        msg = await self.archive_channel.fetch_message(message.id)
 
         ai_processed: list[MapArtLLMOutput] = await ai.process_messages([msg])
 
@@ -287,7 +293,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
     @checks.is_in_bot_channel()
     @commands.command()
-    async def search(self, ctx: commands.Context, *args):
+    async def search(self, ctx: commands.Context, args: commands.Greedy[discord.Message | str]):
         """Search map arts in the archive
 
         Usage: !!search [args]
@@ -326,7 +332,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
     @checks.is_in_bot_channel()
     @commands.command(aliases=["largest"])
-    async def biggest(self, ctx: commands.Context, *args):
+    async def biggest(self, ctx: commands.Context, args: commands.Greedy[discord.Message | str]):
         """The biggest map art on 2b2t
 
         Usage: !!biggest [args]
