@@ -67,7 +67,7 @@ class MapArtArchiveEntry:
 
     @property
     def line(self):
-        size_info = f"{self.width} x {self.height} ({self.total_maps} maps)"
+        size_info = f"{self.width} x {self.height} ({self.total_maps} {"map" if self.total_maps == 1 else "maps"})"
         extra_info = f"[{self.map_type}, {self.palette}] - [**{self.name}**]({self.link}) by **{self.artists_str}**"
 
         return size_info + " - " + extra_info
