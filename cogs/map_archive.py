@@ -171,43 +171,6 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     def cog_unload(self):
         self.update_archive.cancel()
 
-    @has_role("staff")
-    @commands.command(aliases=["e", "ea", "editall"])
-    async def edit(self, ctx: commands.Context, *search_terms):
-        async with sqla_db.Session() as db:
-            query_builder = db.get_query_builder()
-
-            for term in search_terms:
-                query_builder.add_search_filter(term)
-
-            results = await query_builder.execute()
-
-        if len(results) == 0:
-            await ctx.reply("no results for this search")
-            return
-        if ctx.invoked_with in ("e", "edit"):
-            # normal edit semantics
-            if len(results) > 1:
-                await ctx.reply(
-                    f"multiple results for this search, use `{ctx.clean_prefix}editall` to edit multiple maps")
-                return
-
-            await ctx.send(view=MapEntityEditorView(ctx.author, results[0]))
-        elif ctx.invoked_with in ("ea", "editall"):
-            # mass edit semantics
-            for entry in results:
-                if ctx.author.id in self.cancel_queue:
-                    self.cancel_queue.remove(ctx.author.id)
-                    return
-                editor_view = MapEntityEditorView(ctx.author, entry)
-                await ctx.send(view=editor_view)
-                await editor_view.wait()
-
-    @has_role("staff")
-    @commands.command()
-    async def cancel(self, ctx):
-        self.cancel_queue.add(ctx.author.id)
-
     async def fix_attributes(self, entry: MapArtLLMOutput) -> Optional[MapArtArchiveEntry]:
         message = await self.archive_channel.fetch_message(entry.message_id)
 
@@ -267,6 +230,40 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     @update_archive.before_loop
     async def before_updating_archive(self):
         await self.bot.wait_until_ready()
+
+    @has_role("staff")
+    @commands.command(aliases=["e", "ea", "editall"])
+    async def edit(self, ctx: commands.Context, *search_terms):
+        search_results = await search_entries(search_terms, order_by="date", min_size=0)
+        results = search_results.results[(search_results.page - 1) * 10:]
+
+        if len(results) == 0:
+            await ctx.reply("no results for this search")
+            return
+        if ctx.invoked_with in ("e", "edit"):
+            # normal edit semantics
+            if len(results) > 1:
+                await ctx.reply(
+                    f"multiple results for this search, use `{ctx.clean_prefix}editall` to edit multiple maps")
+                return
+
+            await ctx.send(view=MapEntityEditorView(ctx.author, results[0]))
+        elif ctx.invoked_with in ("ea", "editall"):
+            # mass edit semantics
+            self.cancel_queue.discard(ctx.author.id)
+            for entry in results:
+                if ctx.author.id in self.cancel_queue:
+                    self.cancel_queue.discard(ctx.author.id)
+                    return
+                editor_view = MapEntityEditorView(ctx.author, entry)
+                await ctx.send(view=editor_view)
+                await editor_view.wait()
+
+    @has_role("staff")
+    @commands.command()
+    async def cancel(self, ctx: commands.Context):
+        self.cancel_queue.add(ctx.author.id)
+        await ctx.reply("multi-edit cancelled", ephemeral=True)
 
     @is_owner()
     @commands.command()
