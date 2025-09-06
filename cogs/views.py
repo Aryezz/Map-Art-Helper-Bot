@@ -281,7 +281,7 @@ class MapEntityEditorView(BaseView):
         container = ui.Container()
         header = ui.Section(
             ui.TextDisplay(f"# Map Entry Settings <:mcmap:349454913526562816>\n[Jump to message]({self.entry.link})"),
-            accessory=ui.Thumbnail(thumbnail_url)
+            accessory=ui.Thumbnail(thumbnail_url, spoiler=self.entry.flagged)
         )
         container.add_item(header)
 

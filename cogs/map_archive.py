@@ -118,7 +118,7 @@ def get_detail_view(entry):
     thumbnail_url = entry.image_url or "https://minecraft.wiki/images/Barrier_%28held%29_JE2_BE2.png"
     header = ui.Section(
         ui.TextDisplay(f"# {entry.name}\n[Jump to message in archive]({entry.link})"),
-        accessory=ui.Thumbnail(thumbnail_url)
+        accessory=ui.Thumbnail(thumbnail_url, spoiler=entry.flagged)
     )
     view.add_item(header)
     view.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
