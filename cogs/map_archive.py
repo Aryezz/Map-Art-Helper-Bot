@@ -40,8 +40,8 @@ class SearchResults:
         return 0 < self.page <= self.max_page(page_size)
 
 
-async def search_entries(query, order_by: Literal["size"] | Literal["date"] = "size",
-                         min_size: int = 32) -> SearchResults:
+async def search_entries(query, order_by: Literal["size"] | Literal["date"] = "date",
+                         min_size: int = 0) -> SearchResults:
     filter_args: list[str] = []
 
     for term in query:
@@ -110,6 +110,12 @@ async def search_entries(query, order_by: Literal["size"] | Literal["date"] = "s
 
         results.results = await query_builder.execute()
 
+    if len(results.results) == 0:
+        raise ValueError(f"No results")
+
+    if len(results.results) >= 2 and not results.page_valid():
+        raise ValueError(f"Invalid Page, select a page between 1 and {results.max_page()}")
+
     return results
 
 
@@ -137,10 +143,11 @@ def get_detail_view(entry):
 
 async def format_entry_list(ctx: commands.Context, search_results: SearchResults, title: str,
                             line_formatter: Callable[[int, MapArtArchiveEntry], str] = lambda _,
-                                                                                              entry: entry.line) -> str:
-    max_page = math.ceil(len(search_results.results) / 10)
+                                                                                              entry: entry.line,
+                            page_size: int = 10) -> str:
+    max_page = math.ceil(len(search_results.results) / page_size)
 
-    page_entries = search_results.results[(search_results.page - 1) * 10:search_results.page * 10]
+    page_entries = search_results.results[(search_results.page - 1) * page_size:search_results.page * page_size]
 
     message = f"# {title}:\n"
 
@@ -306,21 +313,17 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             to filter maps by a specific artist, use `-n <name>`
         """
 
-        search_results = await search_entries(args, order_by="date", min_size=0)
-
-        if len(search_results.results) == 0:
-            await ctx.reply(f"No results")
+        try:
+            search_results = await search_entries(args, order_by="date", min_size=0)
+        except ValueError as error:
+            await ctx.send(str(error))
             return
+
+        message = await format_entry_list(ctx, search_results, title="Search Results")
 
         if len(search_results.results) == 1:
             await ctx.send(view=get_detail_view(search_results.results[0]))
             return
-
-        if not search_results.page_valid():
-            await ctx.reply(f"Invalid Page, select a page between 1 and {search_results.max_page()}")
-            return
-
-        message = await format_entry_list(ctx, search_results, title="Search Results")
 
         if len(message) <= 2000:
             await ctx.send(message)
@@ -345,18 +348,14 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             to filter maps by a specific artist, use `-n <name>`
         """
 
-        search_results = await search_entries(args, order_by="size", min_size=32)
-
-        if len(search_results.results) == 0:
-            await ctx.reply(f"No results")
+        try:
+            search_results = await search_entries(args, order_by="size", min_size=32)
+        except ValueError as error:
+            await ctx.send(str(error))
             return
 
         if len(search_results.results) == 1:
             await ctx.send(view=get_detail_view(search_results.results[0]))
-            return
-
-        if not search_results.page_valid():
-            await ctx.reply(f"Invalid Page")
             return
 
         title = "Biggest map-art ever built on 2b2t"

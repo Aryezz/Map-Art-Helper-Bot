@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 import discord
 from discord.ext import commands
@@ -19,7 +20,7 @@ class BlacklistedMapError(Exception):
 
 
 class TransparentMapError(Exception):
-    """Raised when a map is completly transparent"""
+    """Raised when a map is completely transparent"""
     def __init__(self, map_id: int):
         self.map_id = map_id
         super().__init__()
@@ -51,9 +52,10 @@ class CommandErrorHandler(commands.Cog):
             case commands.CheckFailure():
                 await ctx.reply("A check for this command failed")
             case _:
-                await ctx.send(f"Error while processing\n```txt\n{error}```")
-                logger.error('Ignoring {} from message `{}`'.format(type(error).__name__, ctx.message.content))
-                logger.error(error, exc_info=False, stack_info=True)
+                tb = "".join(traceback.format_exception(type(error), error, error.__traceback__))
+                message = f"An error occurred:\n```py\n{tb}\n```"
+                await ctx.send(message)
+                logger.error(f"Ignoring error:\n{tb}")
 
 
 async def setup(client):
