@@ -357,7 +357,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         await self.bot.wait_until_ready()
 
     @has_role("staff")
-    @commands.command(aliases=["e", "ea", "editall"])
+    @commands.command(aliases=["e", "ea", "editall"], hidden=True)
     async def edit(self, ctx: commands.Context, search_terms: Annotated[
         SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
         search_results = await search_entries(search_terms)
@@ -386,13 +386,13 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
                 await editor_view.wait()
 
     @has_role("staff")
-    @commands.command()
+    @commands.command(hidden=True)
     async def cancel(self, ctx: commands.Context):
         self.cancel_queue.add(ctx.author.id)
         await ctx.reply("multi-edit cancelled", ephemeral=True)
 
     @is_owner()
-    @commands.command()
+    @commands.command(hidden=True)
     async def import_map(self, ctx, message: discord.Message):
         msg = await self.archive_channel.fetch_message(message.id)
 
