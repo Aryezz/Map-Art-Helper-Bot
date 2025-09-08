@@ -1,9 +1,10 @@
 import logging
 import datetime
-from typing import Iterable
+from typing import Iterable, Literal
 
 import sqlalchemy.ext.asyncio
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_, DateTime, Boolean, \
+    not_, and_
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import relationship
@@ -176,37 +177,65 @@ class MapArtQueryBuilder:
         self.session: sqlalchemy.ext.asyncio.AsyncSession = session
         self.query = select(MapArtArchiveDBEntry)
 
-    def order_by_size(self):
-        self.query = self.query.order_by(desc(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height), MapArtArchiveDBEntry.create_date)
+    def order_by(self, field: Literal["size", "date"]):
+        if field == "size":
+            self.query = self.query.order_by(desc(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height), MapArtArchiveDBEntry.create_date)
+        elif field == "date":
+            self.query = self.query.order_by(MapArtArchiveDBEntry.create_date)
 
-    def order_by_date(self):
-        self.query = self.query.order_by(MapArtArchiveDBEntry.create_date)
+    def add_size_filter(self, min_size=None, max_size=None):
+        if min_size is not None:
+            self.query = self.query.where(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height >= min_size)
+        if max_size is not None:
+            self.query = self.query.where(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height <= max_size)
 
-    def add_size_filter(self, min_size):
-        self.query = self.query.where(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height >= min_size)
+    def add_type_filter(self, include: list[MapArtArchiveEntry]=None, exclude: list[MapArtArchiveEntry]=None):
+        if include is not None and len(include) >= 1:
+            self.query = self.query.where(MapArtArchiveDBEntry.type.in_(include))
+        if exclude is not None and len(exclude) >= 1:
+            self.query = self.query.where(MapArtArchiveDBEntry.type.notin_(exclude))
 
-    def add_type_filter(self, type: MapArtType):
-        self.query = self.query.where(MapArtArchiveDBEntry.type != type)
+    def add_palette_filter(self, include: list[MapArtPalette]=None, exclude: list[MapArtPalette]=None):
+        if include is not None and len(include) >= 1:
+            self.query = self.query.where(MapArtArchiveDBEntry.palette.in_(include))
+        if exclude is not None and len(exclude) >= 1:
+            self.query = self.query.where(MapArtArchiveDBEntry.palette.notin_(exclude))
 
-    def add_palette_filter(self, palette: MapArtPalette):
-        self.query = self.query.where(MapArtArchiveDBEntry.palette != palette)
-
-    def add_artist_filter(self, artist: str):
-        self.query = self.query.join(MapArtArchiveDBEntry.artists).where(MapArtArtist.name.ilike(artist))
+    def add_artist_filter(self, include: list[str]=None, exclude: list[str]=None):
+        if include is not None and len(include) >= 1:
+            self.query = self.query.where(and_(*[MapArtArchiveDBEntry.artists.any(MapArtArtist.name.ilike(name)) for name in include]))
+        if exclude is not None and len(exclude) >= 1:
+            self.query = self.query.where(and_(*[not_(MapArtArchiveDBEntry.artists.any(MapArtArtist.name.ilike(name))) for name in exclude]))
 
     def add_duplicate_filter(self):
         self.query = self.query.where(MapArtArchiveDBEntry.message_id.in_(select(MapArtArchiveDBEntry.message_id).group_by(MapArtArchiveDBEntry.message_id).having(func.count() >= 2)))
 
-    def add_search_filter(self, search_term: str):
-        self.query = (self.query
-        .join(MapArtArchiveDBEntry.artists)
-        .where(or_(
-            MapArtArchiveDBEntry.name.contains(search_term),
-            MapArtArtist.name.ilike(search_term),
-            MapArtArchiveDBEntry.palette.ilike(search_term),
-            MapArtArchiveDBEntry.type.ilike(search_term),
-            MapArtArchiveDBEntry.message_id == search_term
-        )))
+    def add_search_filter(self, include=None, exclude=None):
+        if include is not None and len(include) >= 1:
+            for search_term in include:
+                self.query = (self.query
+                .join(MapArtArchiveDBEntry.artists)
+                .where(or_(
+                    MapArtArchiveDBEntry.name.contains(search_term),
+                    MapArtArtist.name.ilike(search_term),
+                    MapArtArchiveDBEntry.palette.ilike(search_term),
+                    MapArtArchiveDBEntry.type.ilike(search_term),
+                    MapArtArchiveDBEntry.message_id == search_term,
+                    MapArtArchiveDBEntry.notes.ilike(search_term),
+                )))
+
+        if exclude is not None and len(exclude) >= 1:
+            for search_term in exclude:
+                self.query = (self.query
+                .join(MapArtArchiveDBEntry.artists)
+                .where(not_(or_(
+                    MapArtArchiveDBEntry.name.contains(search_term),
+                    MapArtArtist.name.ilike(search_term),
+                    MapArtArchiveDBEntry.palette.ilike(search_term),
+                    MapArtArchiveDBEntry.type.ilike(search_term),
+                    MapArtArchiveDBEntry.message_id == search_term,
+                    MapArtArchiveDBEntry.notes.ilike(search_term),
+                ))))
 
     async def execute(self):
         db_entries = (await self.session.execute(self.query)).scalars().unique().all()

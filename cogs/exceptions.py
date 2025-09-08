@@ -1,7 +1,6 @@
 import logging
 import traceback
 
-import discord
 from discord.ext import commands
 
 from cogs import checks
@@ -10,33 +9,18 @@ from cogs import checks
 logger = logging.getLogger("discord.mapart.exceptions")
 
 
-class BlacklistedMapError(Exception):
-    """Raised when a blacklisted map gets requested"""
-    def __init__(self, map_id: int, user: discord.Member, message=None):
-        self.map_id = map_id
-        self.user = user
-        self.error_message = message or f"Blacklisted map with id {self.map_id!s} was requested by user {self.user!s}"
-        super().__init__(self.error_message)
-
-
-class TransparentMapError(Exception):
-    """Raised when a map is completely transparent"""
-    def __init__(self, map_id: int):
-        self.map_id = map_id
-        super().__init__()
-
-
 class CommandErrorHandler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: Exception):
-        error = getattr(error, 'original', error)
+        if isinstance(error, commands.CommandInvokeError):
+            error = getattr(error, 'original', error)
 
         match error:
             case commands.CommandNotFound():
-                pass  # prevent log spam from typos, etc.
+                await ctx.reply(f"Command `{ctx.clean_prefix}{ctx.invoked_with}` can't be found")
             case commands.MissingRequiredArgument():
                 await ctx.reply("Missing Argument: " + str(error.param))
             case commands.BadArgument():
@@ -51,6 +35,8 @@ class CommandErrorHandler(commands.Cog):
                 await ctx.reply("This command only works in bot channels (channels starting with `bot-`)")
             case commands.CheckFailure():
                 await ctx.reply("A check for this command failed")
+            case commands.ConversionError():
+                await ctx.reply(f"Failed to parse the provided arguments: {str(error.original)}")
             case _:
                 tb = "".join(traceback.format_exception(type(error), error, error.__traceback__))
                 message = f"An error occurred:\n```py\n{tb}\n```"

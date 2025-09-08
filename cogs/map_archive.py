@@ -1,9 +1,11 @@
 import datetime
 import logging
 import math
+import re
 import traceback
+from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Optional, Literal, Callable
+from typing import Optional, Literal, Callable, Annotated
 
 import discord
 from discord import DiscordException, ui
@@ -17,20 +19,180 @@ import sqla_db
 from ai import MapArtLLMOutput
 from cogs import checks
 from cogs.views import MapEntityEditorView
-from map_archive_entry import MapArtArchiveEntry
+from map_archive_entry import MapArtArchiveEntry, MapArtType, MapArtPalette
 
 logger = logging.getLogger("discord.map_archive")
+
+order_by_arg = Literal["size", "date"]
+
+
+class MixedArgsConverter(commands.Converter):
+    async def convert(self, ctx, argument) -> tuple[list[str], dict[str, list[str]]]:
+        args = []
+        kwargs = defaultdict(list)
+
+        while argument:
+            # keyword argument with quoted value, e.g. key: "value quoted"
+            if match := re.match(r"(?P<key>\S+)\s*:\s*\"(?P<value>([^\"\\]|\\.)*)\"", argument):
+                key = match.group("key")
+                value = re.sub(r"\\(.)", r"\1", match.group("value"))
+                kwargs[key].append(value)
+                argument = argument[match.end():].lstrip()
+            # keyword argument with plain value, e.g. key: value
+            elif match := re.match(r"(?P<key>\S+)\s*:\s*(?P<value>\S+)", argument):
+                key = match.group("key")
+                value = match.group("value")
+                kwargs[key].append(value)
+                argument = argument[match.end():].lstrip()
+            # argument with quoted value, e.g. "value quoted"
+            elif match := re.match(r"\"(?P<value>([^\"\\]|\\.)*)\"", argument):
+                args.append(re.sub(r"\\(.)", r"\1", match.group("value")))
+                argument = argument[match.end():].lstrip()
+            # argument with plain value, e.g. value
+            elif match := re.match(r"(?P<value>\S*)", argument):
+                args.append(match.group("value"))
+                argument = argument[match.end():].lstrip()
+            else:
+                raise ValueError(f"cannot continue parsing `{argument}`")
+
+        return args, kwargs
+
+
+@dataclass
+class SearchArguments:
+    included_types: list[MapArtType] = field(default_factory=list)
+    excluded_types: list[MapArtType] = field(default_factory=list)
+    included_palettes: list[MapArtPalette] = field(default_factory=list)
+    excluded_palettes: list[MapArtPalette] = field(default_factory=list)
+    included_artists: list[str] = field(default_factory=list)
+    excluded_artists: list[str] = field(default_factory=list)
+    included_keywords: list[str] = field(default_factory=list)
+    excluded_keywords: list[str] = field(default_factory=list)
+
+    min_size: int | None = None
+    max_size: int | None = None
+
+    order_by: order_by_arg = None
+
+    filter_duplicates: bool = False
+    page: int | None = None
+    non_page_args: list[str] = field(default_factory=list)
+
+
+class SearchArgumentConverter(MixedArgsConverter):
+    filter_flat_options: set[str] = {"-f", "-flat"}
+    filter_carpet_only_options: set[str] = {"-c", "-co", "-carpet", "-carpetonly", "-carpet-only"}
+
+    def __init__(self, default_min_size: int=0, default_order_by: order_by_arg= "date"):
+        super().__init__()
+
+        self.default_min_size = default_min_size
+        self.default_order_by = default_order_by
+
+    def parse_size_arg(self, arg: str, search_args: SearchArguments) -> bool:
+        if match := re.match(r"(?P<qualifier>[><]=?|=)(?P<size>\d+)", arg):
+            size = int(match.group("size"))
+            qualifier = match.group("qualifier")
+
+            if qualifier == ">":
+                size += 1
+            elif qualifier == "<":
+                size -= 1
+
+            if size < 1:
+                raise ValueError("Invalid size argument")
+
+            if qualifier.startswith(">") or qualifier == "=":
+                if search_args.min_size is not None:
+                    raise ValueError("multiple min-size arguments encountered")
+
+                search_args.min_size = size
+            if qualifier.startswith("<") or qualifier == "=":
+                if search_args.max_size is not None:
+                    raise ValueError("multiple max-size arguments encountered")
+
+                search_args.max_size = size
+
+            return True
+        return False
+
+    async def convert(self, ctx, argument):
+        search_arguments = SearchArguments()
+
+        cleaned_args = re.sub(r"https?://discord.com/channels/\d+/\d+/(\d+)", r"\1", argument)
+
+        args, kwargs = await super().convert(ctx, cleaned_args)
+
+        for arg in args:
+            if re.fullmatch(r"-?\d{1,3}", arg):
+                if search_arguments.page is not None:
+                    raise ValueError("multiple page arguments encountered")
+
+                search_arguments.page = int(arg)
+                continue
+
+            if self.parse_size_arg(arg, search_arguments):
+                continue
+
+            search_arguments.non_page_args.append(arg)
+
+            if arg in self.filter_flat_options:
+                search_arguments.excluded_types.append(MapArtType.FLAT)
+                self.default_min_size = min(self.default_min_size, 8)
+            elif arg in self.filter_carpet_only_options:
+                search_arguments.excluded_palettes.append(MapArtPalette.CARPETONLY)
+            elif arg == "-dup":
+                search_arguments.filter_duplicates = True
+            else:
+                self.default_min_size = min(self.default_min_size, 0)
+                if arg.startswith("-"):
+                    search_arguments.excluded_keywords.append(arg[1:])
+                else:
+                    search_arguments.included_keywords.append(arg)
+
+        for (key, value) in kwargs.items():
+            if exclude := key.startswith("-"):
+                key = key[1:]
+
+            if "page".startswith(key):
+                if exclude:
+                    raise ValueError("cannot use exclusion for argument `page`")
+                if search_arguments.page is not None:
+                    raise ValueError("multiple page arguments encountered")
+
+                search_arguments.page = int(value[-1])
+            elif "artist".startswith(key):
+                if exclude:  search_arguments.excluded_artists.extend(value)
+                else:        search_arguments.included_artists.extend(value)
+            elif "type".startswith(key):
+                map_types = [MapArtType[t] for t in value]
+                if exclude:  search_arguments.excluded_types.extend(map_types)
+                else:        search_arguments.included_types.extend(map_types)
+            elif "palette".startswith(key):
+                map_palettes = [MapArtPalette[p] for p in value]
+                if exclude:  search_arguments.excluded_palettes.extend(map_palettes)
+                else:        search_arguments.included_palettes.extend(map_palettes)
+            elif "size".startswith(key):
+                if exclude:
+                    raise ValueError("cannot use exclusion for argument `size`")
+
+                for size_arg in value:
+                    self.parse_size_arg(size_arg, search_arguments)
+
+        if search_arguments.page is None:
+            search_arguments.page = 1
+        if search_arguments.min_size is None:
+            search_arguments.min_size = self.default_min_size
+        if search_arguments.order_by is None:
+            search_arguments.order_by = self.default_order_by
+
+        return search_arguments
 
 
 @dataclass
 class SearchResults:
-    filter_flat_only: bool = False
-    filter_carpet_only: bool = False
-    filter_duplicates: bool = False
-    filter_artists: list[str] = field(default_factory=list)
-    page: int = 1
-    search_terms: list[str] = field(default_factory=list)
-    non_page_args: list[str] = field(default_factory=list)
+    page: int
+    non_page_args: list[str]
     results: list[MapArtArchiveEntry] = field(default_factory=list)
 
     def max_page(self, page_size: int = 10):
@@ -40,73 +202,24 @@ class SearchResults:
         return 0 < self.page <= self.max_page(page_size)
 
 
-async def search_entries(query, order_by: Literal["size"] | Literal["date"] = "date",
-                         min_size: int = 0) -> SearchResults:
-    filter_args: list[str] = []
-
-    for term in query:
-        if isinstance(term, discord.Message):
-            filter_args.append(str(term.id))
-        else:
-            filter_args.append(term)
-
-    filter_flat_options: set[str] = {"-f", "-flat"}
-    filter_carpet_only_options: set[str] = {"-c", "-co", "-carpet", "-carpetonly", "-carpet-only"}
-
-    results = SearchResults()
-
-    while len(filter_args) > 0:
-        arg = filter_args.pop(0)
-
-        if arg.isnumeric() and int(arg) < 1000:
-            results.page = int(arg)
-            continue
-
-        results.non_page_args.append(arg)
-
-        if arg in filter_flat_options:
-            results.filter_flat_only = True
-        elif arg in filter_carpet_only_options:
-            results.filter_flat_only = True
-        elif arg == "-dup":
-            results.filter_flat_only = True
-        elif arg == "-n" and len(filter_args) >= 1:
-            artist_name = filter_args.pop(0)
-            results.filter_artists.append(artist_name)
-            results.non_page_args.append(artist_name)
-        else:
-            results.search_terms.append(arg)
+async def search_entries(query: SearchArguments) -> SearchResults:
+    results = SearchResults(query.page, query.non_page_args)
 
     async with sqla_db.Session() as db:
         query_builder = db.get_query_builder()
 
-        if results.filter_flat_only:
-            # when filtering for non-flat maps, the default cutoff is 8 maps
-            min_size = min(min_size, 8)
-            query_builder.add_type_filter(sqla_db.MapArtType.FLAT)
+        query_builder.add_type_filter(include=query.included_types, exclude=query.excluded_types)
+        query_builder.add_palette_filter(include=query.included_palettes, exclude=query.excluded_palettes)
 
-        if results.filter_carpet_only:
-            query_builder.add_palette_filter(sqla_db.MapArtPalette.CARPETONLY)
-
-        if results.filter_duplicates:
+        if query.filter_duplicates:
             query_builder.add_duplicate_filter()
 
-        for artist in results.filter_artists:
-            query_builder.add_artist_filter(artist)
+        query_builder.add_artist_filter(include=query.included_artists, exclude=query.excluded_artists)
+        query_builder.add_search_filter(include=query.included_keywords, exclude=query.excluded_keywords)
 
-        if len(results.filter_artists) > 0 or len(results.search_terms) > 0:
-            # when filtering by artist, there is no minimum size
-            min_size = min(min_size, 0)
+        query_builder.order_by(query_builder.order_by)
 
-        for search_term in results.search_terms:
-            query_builder.add_search_filter(search_term)
-
-        if order_by == "date":
-            query_builder.order_by_date()
-        elif order_by == "size":
-            query_builder.order_by_size()
-
-        query_builder.add_size_filter(min_size)
+        query_builder.add_size_filter(min_size=query.min_size, max_size=query.max_size)
 
         results.results = await query_builder.execute()
 
@@ -245,8 +358,9 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
     @has_role("staff")
     @commands.command(aliases=["e", "ea", "editall"])
-    async def edit(self, ctx: commands.Context, search_terms: commands.Greedy[discord.Message | str]):
-        search_results = await search_entries(search_terms, order_by="date", min_size=0)
+    async def edit(self, ctx: commands.Context, search_terms: Annotated[
+        SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
+        search_results = await search_entries(search_terms)
         results = search_results.results[(search_results.page - 1) * 10:]
 
         if len(results) == 0:
@@ -299,14 +413,15 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
     @checks.is_in_bot_channel()
     @commands.command()
-    async def search(self, ctx: commands.Context, args: commands.Greedy[discord.Message | str]):
+    async def search(self, ctx: commands.Context, *, search_args: Annotated[
+        SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
         """Search map arts in the archive
 
         Usage: !!search [args]
 
         Parameters
         ----------
-        args : list, optional
+        search_args : list, optional
             Page and filters to apply to the list of maps.
             To filter out flat maps, use `-f`,
             to filter out carpet-only maps, use `-c` or `-co`,
@@ -314,7 +429,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         """
 
         try:
-            search_results = await search_entries(args, order_by="date", min_size=0)
+            search_results = await search_entries(search_args)
         except ValueError as error:
             await ctx.send(str(error))
             return
@@ -334,7 +449,8 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
     @checks.is_in_bot_channel()
     @commands.command(aliases=["largest"])
-    async def biggest(self, ctx: commands.Context, args: commands.Greedy[discord.Message | str]):
+    async def biggest(self, ctx: commands.Context, args: Annotated[
+        SearchArguments, SearchArgumentConverter(default_min_size=32, default_order_by="size")]):
         """The biggest map art on 2b2t
 
         Usage: !!biggest [args]
@@ -349,7 +465,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         """
 
         try:
-            search_results = await search_entries(args, order_by="size", min_size=32)
+            search_results = await search_entries(args)
         except ValueError as error:
             await ctx.send(str(error))
             return
