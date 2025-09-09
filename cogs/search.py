@@ -79,7 +79,7 @@ def parse_size_arg(arg: str, search_args: SearchArguments) -> bool:
             size -= 1
 
         if size < 1:
-            raise ValueError("Invalid size argument")
+            raise ValueError("Invalid size argument, use a qualifier (>, >=, <, <=, =) and a size")
 
         if qualifier.startswith(">") or qualifier == "=":
             if search_args.min_size is not None:
@@ -167,6 +167,7 @@ class SearchArgumentConverter(MixedArgsConverter):
 
             if arg in self.filter_flat_options:
                 search_arguments.excluded_types.append(MapArtType.FLAT)
+                search_arguments.excluded_types.append(MapArtType.DUALLAYERED)
                 self.default_min_size = min(self.default_min_size, 8)
             elif arg in self.filter_carpet_only_options:
                 search_arguments.excluded_palettes.append(MapArtPalette.CARPETONLY)

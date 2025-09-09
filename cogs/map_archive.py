@@ -212,15 +212,14 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
         """Search map arts in the archive
 
-        Usage: !!search [args]
+        Usage: !!search [search_args]
 
         Parameters
         ----------
         search_args : list, optional
-            Page and filters to apply to the list of maps.
-            To filter out flat maps, use `-f`,
-            to filter out carpet-only maps, use `-c` or `-co`,
-            to filter maps by a specific artist, use `-n <name>`
+            keyword value pairs in the format key:value or plain search terms
+            recognized keys: page, artist, type, palette, size and order
+            use "-" to negate arguments, e.g. -type:flat to filter flat maps
         """
 
         await asyncio.sleep(5)
@@ -250,15 +249,14 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         SearchArguments, SearchArgumentConverter(default_min_size=32, default_order_by="size")]):
         """The biggest map art on 2b2t
 
-        Usage: !!biggest [args]
+        Usage: !!biggest [search_args]
 
         Parameters
         ----------
         search_args : list, optional
-            Page and filters to apply to the list of maps.
-            To filter out flat maps, use `-f`,
-            to filter out carpet-only maps, use `-c` or `-co`,
-            to filter maps by a specific artist, use `-n <name>`
+            keyword value pairs in the format key:value or plain search terms
+            recognized keys: page, artist, type, palette, size and order
+            use "-" to negate arguments, e.g. -type:flat to filter flat maps
         """
 
         try:
