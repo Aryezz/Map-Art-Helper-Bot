@@ -217,9 +217,9 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         Parameters
         ----------
         search_args : list, optional
-            keyword value pairs in the format key:value or plain search terms
-            recognized keys: page, artist, type, palette, size and order
-            use "-" to negate arguments, e.g. -type:flat to filter flat maps
+            keyword value pairs in the format key:value or plain search terms.
+            recognized keys: page, artist, type, palette, size and order.
+            use "-" to negate arguments, e.g. -type:flat to filter flat maps.
         """
 
         await asyncio.sleep(5)
@@ -254,9 +254,9 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         Parameters
         ----------
         search_args : list, optional
-            keyword value pairs in the format key:value or plain search terms
-            recognized keys: page, artist, type, palette, size and order
-            use "-" to negate arguments, e.g. -type:flat to filter flat maps
+            keyword value pairs in the format key:value or plain search terms.
+            recognized keys: page, artist, type, palette, size and order.
+            use "-" to negate arguments, e.g. -type:flat to filter flat maps.
         """
 
         try:
