@@ -202,7 +202,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
                 await ctx.send(f"processed 1 message, added {len(final_entries)} maps")
 
     @checks.is_in_bot_channel()
-    @commands.command()
+    @commands.command(rest_is_raw=True)
     async def search(self, ctx: commands.Context, *, search_args: Annotated[
         SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
         """Search map arts in the archive
@@ -238,8 +238,8 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             await ctx.send("\n".join(lines[6:]))
 
     @checks.is_in_bot_channel()
-    @commands.command(aliases=["largest"])
-    async def biggest(self, ctx: commands.Context, args: Annotated[
+    @commands.command(aliases=["largest"], rest_is_raw=True)
+    async def biggest(self, ctx: commands.Context, *, search_args: Annotated[
         SearchArguments, SearchArgumentConverter(default_min_size=32, default_order_by="size")]):
         """The biggest map art on 2b2t
 
@@ -247,7 +247,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
         Parameters
         ----------
-        args : list, optional
+        search_args : list, optional
             Page and filters to apply to the list of maps.
             To filter out flat maps, use `-f`,
             to filter out carpet-only maps, use `-c` or `-co`,
@@ -255,7 +255,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         """
 
         try:
-            search_results = await search_entries(args)
+            search_results = await search_entries(search_args)
         except ValueError as error:
             await ctx.send(str(error))
             return
@@ -266,7 +266,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
         title = "Biggest map-art ever built on 2b2t"
 
-        if args.non_page_args:
+        if search_args.non_page_args:
             title = f"{title} (filtered)"
 
         ranks = {1: "🥇", 2: "🥈", 3: "🥉"}

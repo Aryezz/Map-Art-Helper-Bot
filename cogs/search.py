@@ -244,7 +244,7 @@ async def search_entries(query: SearchArguments) -> SearchResults:
         query_builder.add_artist_filter(include=query.included_artists, exclude=query.excluded_artists)
         query_builder.add_search_filter(include=query.included_keywords, exclude=query.excluded_keywords)
 
-        query_builder.order_by(query_builder.order_by)
+        query_builder.order_by(query.order_by)
 
         query_builder.add_size_filter(min_size=query.min_size, max_size=query.max_size)
 
