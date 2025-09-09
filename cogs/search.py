@@ -17,6 +17,8 @@ class MixedArgsConverter(commands.Converter):
         args = []
         kwargs = defaultdict(list)
 
+        argument = argument.lstrip()
+
         while argument:
             # keyword argument with quoted value, e.g. key: "value quoted"
             if match := re.match(r"(?P<key>\S+)\s*:\s*\"(?P<value>([^\"\\]|\\.)*)\"", argument):
@@ -35,7 +37,7 @@ class MixedArgsConverter(commands.Converter):
                 args.append(re.sub(r"\\(.)", r"\1", match.group("value")))
                 argument = argument[match.end():].lstrip()
             # argument with plain value, e.g. value
-            elif match := re.match(r"(?P<value>\S*)", argument):
+            elif match := re.match(r"(?P<value>\S+)", argument):
                 args.append(match.group("value"))
                 argument = argument[match.end():].lstrip()
             else:
@@ -145,11 +147,10 @@ class SearchArgumentConverter(MixedArgsConverter):
         self.default_order_by = default_order_by
 
     async def convert(self, ctx, argument):
-        search_arguments = SearchArguments()
-
         cleaned_args = re.sub(r"https?://discord.com/channels/\d+/\d+/(\d+)", r"\1", argument)
-
         args, kwargs = await super().convert(ctx, cleaned_args)
+
+        search_arguments = SearchArguments()
 
         for arg in args:
             if re.fullmatch(r"-?\d{1,3}", arg):
@@ -191,23 +192,28 @@ class SearchArgumentConverter(MixedArgsConverter):
                 search_arguments.page = int(value[0])
                 continue
             elif "artist".startswith(key):
+                key = "artist"
                 if exclude:  search_arguments.excluded_artists.extend(value)
                 else:        search_arguments.included_artists.extend(value)
             elif "type".startswith(key):
+                key = "type"
                 map_types = [get_map_type(t) for t in value]
                 if exclude:  search_arguments.excluded_types.extend(map_types)
                 else:        search_arguments.included_types.extend(map_types)
             elif "palette".startswith(key):
+                key = "palette"
                 map_palettes = [get_map_palette(p) for p in value]
                 if exclude:  search_arguments.excluded_palettes.extend(map_palettes)
                 else:        search_arguments.included_palettes.extend(map_palettes)
             elif "size".startswith(key):
+                key = "size"
                 if exclude:
                     raise ValueError("cannot use exclusion for argument `size`")
 
                 for size_arg in value:
                     parse_size_arg(size_arg, search_arguments)
             elif "order".startswith(key):
+                key = "order"
                 if search_arguments.order_by is not None or len(value) > 1:
                     raise ValueError("multiple order arguments encountered")
 
@@ -220,8 +226,12 @@ class SearchArgumentConverter(MixedArgsConverter):
                 if order_arg not in ("size", "date"):
                     raise ValueError(f"invalid order argument: '{order_arg}', use 'size' or 'date'")
 
+                value[0] = order_arg
                 search_arguments.order_by = order_arg
                 search_arguments.reverse_order = exclude
+
+            for v in value:
+                search_arguments.non_page_args.append(f"{'-' if exclude else ''}{key}:\"{v}\"")
 
         if search_arguments.page is None:
             search_arguments.page = 1
