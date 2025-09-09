@@ -32,6 +32,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/aryezz/map-art-helper-bot:latest
+          tags: ${{ github.ref_name == 'main' && 'ghcr.io/aryezz/map-art-helper-bot:latest' || format('ghcr.io/aryezz/map-art-helper-bot:{0},ghcr.io/aryezz/map-art-helper-bot:dev', github.ref_name) }}
           cache-from: type=registry,ref=ghcr.io/aryezz/map-art-helper-bot:latest
           cache-to: type=inline
