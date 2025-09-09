@@ -62,9 +62,9 @@ async def format_entry_list(ctx: commands.Context, search_results: SearchResults
 
     filters_joined = (' ' + ' '.join(search_results.non_page_args)) if search_results.non_page_args else ""
     if search_results.page < max_page:
-        command_help = f" - use `{ctx.clean_prefix}{ctx.invoked_with} {search_results.page + 1}{filters_joined}` to see next page"
+        command_help = f" - use_ `{ctx.clean_prefix}{ctx.invoked_with} {search_results.page + 1}{filters_joined}` _to see next page"
     elif search_results.page > 1:  # only show previous page hint if not on first page
-        command_help = f" - use `{ctx.clean_prefix}{ctx.invoked_with} {search_results.page - 1}{filters_joined}` to see previous page"
+        command_help = f" - use_ `{ctx.clean_prefix}{ctx.invoked_with} {search_results.page - 1}{filters_joined}` _to see previous page"
 
     message += f"\n\n_{page_info} {command_help}_"
     return message
