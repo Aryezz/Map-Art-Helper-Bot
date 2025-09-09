@@ -23,7 +23,7 @@ from map_archive_entry import MapArtArchiveEntry
 logger = logging.getLogger("discord.map_archive")
 
 
-def get_detail_view(entry):
+def get_detail_view(entry: MapArtArchiveEntry):
     view = ui.LayoutView()
     thumbnail_url = entry.image_url or "https://minecraft.wiki/images/Barrier_%28held%29_JE2_BE2.png"
     header = ui.Section(
@@ -135,6 +135,10 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
             if not config.dev_mode:
                 await self.bot_log_channel.send(f"processed {len(messages)} messages, added {len(final_entries)} maps")
+
+                for entry in final_entries:
+                    await self.bot_log_channel.send(view=get_detail_view(entry))
+
         except BaseException as error:
             logger.error("error while processing maps", exc_info=error)
             if not config.dev_mode:
