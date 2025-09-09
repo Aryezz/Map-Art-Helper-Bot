@@ -147,10 +147,10 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         await self.bot.wait_until_ready()
 
     @has_role("staff")
-    @commands.command(aliases=["e", "ea", "editall"], hidden=True)
-    async def edit(self, ctx: commands.Context, search_terms: Annotated[
+    @commands.command(aliases=["e", "ea", "editall"], hidden=True, rest_is_raw=True)
+    async def edit(self, ctx: commands.Context, *, search_args: Annotated[
         SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
-        search_results = await search_entries(search_terms)
+        search_results = await search_entries(search_args)
         results = search_results.results[(search_results.page - 1) * 10:]
 
         if len(results) == 0:
