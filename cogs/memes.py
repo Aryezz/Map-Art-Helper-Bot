@@ -31,7 +31,7 @@ class MemeCommands(commands.Cog, name="Memes"):
 
     @commands.command(hidden=True)
     async def smallest(self, ctx):
-        await ctx.send(f"{ctx.author.global_name} pp")
+        await ctx.send(f"{ctx.author.display_name} pp :microscope:")
 
     @commands.command(hidden=True)
     async def yqe(self, ctx):
