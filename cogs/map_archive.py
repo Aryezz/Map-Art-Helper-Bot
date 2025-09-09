@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import logging
 import math
@@ -32,13 +33,13 @@ def get_detail_view(entry):
     view.add_item(header)
     view.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
     view.add_item(
-        ui.TextDisplay(
+        ui.TextDisplay(discord.utils.escape_mentions(
             f"### Size\n{entry.width} x {entry.height} ({entry.total_maps} {"map" if entry.total_maps == 1 else "maps"})\n" +
             f"### Artists\n" + "\n".join(f"* {artist}" for artist in entry.artists) + "\n" +
             f"### Type\n{entry.map_type.value}\n"
             f"### Palette\n{entry.palette.value}\n"
             f"### Notes\n" +
-            ("\n".join("> " + line for line in entry.notes.split("\n")) if entry.notes else "-")
+            ("\n".join("> " + line for line in entry.notes.split("\n")) if entry.notes else "-"))
         )
     )
     return view
@@ -217,6 +218,8 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             to filter out carpet-only maps, use `-c` or `-co`,
             to filter maps by a specific artist, use `-n <name>`
         """
+
+        await asyncio.sleep(5)
 
         try:
             search_results = await search_entries(search_args)

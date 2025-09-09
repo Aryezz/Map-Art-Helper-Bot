@@ -27,11 +27,9 @@ class MapArtLLMOutput(BaseModel):
 def serialize_message(message: discord.Message) -> Dict:
     return {
         "author": message.author.display_name,
-        "author_id": message.author.id,
-        "content": message.content,
+        "content": message.clean_content,
         "message_id": message.id,
         "attachments": [a.url.split("?")[0].split("/")[-1] for a in message.attachments],
-        "mentions": [{"name": mention.display_name, "id": mention.id} for mention in message.mentions],
     }
 
 
@@ -46,7 +44,6 @@ async def process_messages(messages: List[discord.Message]) -> List[MapArtLLMOut
     contents = (
         "Process the following serialized Discord messages to extract info. "
         "The messages describe Minecraft map arts and contain some structured properties. "
-        "If the message contains user mentions, use the mentions to evaluate which users are mentioned where. "
         "If there are references to original artists or people preprocessing the image, you can ignore those, and just return the builders/printers/mappers as the artists. "
         "If no size is provided, you can assume 1x1. For all sizes you can assume width comes before height. "
         "The output should contain one entry for every message with one or more attachments. "
