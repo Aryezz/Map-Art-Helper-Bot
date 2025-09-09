@@ -9,6 +9,7 @@ import config
 
 intents = Intents.default()
 intents.message_content = True
+intents.members = True
 bot = commands.Bot(
     intents=intents,
     command_prefix=config.prefix,
@@ -26,7 +27,7 @@ async def on_ready():
     logger.info('Guilds:')
     logger.info("\n".join(["* " + g.name async for g in bot.fetch_guilds()]))
 
-    cogs = ["cogs.memes", "cogs.help", "cogs.links", "cogs.misc", "cogs.exceptions"]
+    cogs = ["cogs.memes", "cogs.help", "cogs.links", "cogs.misc", "cogs.map_archive", "cogs.exceptions"]
 
     for cog in cogs:
         await bot.load_extension(cog)
