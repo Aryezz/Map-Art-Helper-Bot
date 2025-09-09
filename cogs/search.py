@@ -59,6 +59,7 @@ class SearchArguments:
     max_size: int | None = None
 
     order_by: order_by_arg = None
+    reverse_order: bool = False
 
     filter_duplicates: bool = False
     page: int | None = None
@@ -184,10 +185,11 @@ class SearchArgumentConverter(MixedArgsConverter):
             if "page".startswith(key):
                 if exclude:
                     raise ValueError("cannot use exclusion for argument `page`")
-                if search_arguments.page is not None:
+                if search_arguments.page is not None or len(value) > 1:
                     raise ValueError("multiple page arguments encountered")
 
-                search_arguments.page = int(value[-1])
+                search_arguments.page = int(value[0])
+                continue
             elif "artist".startswith(key):
                 if exclude:  search_arguments.excluded_artists.extend(value)
                 else:        search_arguments.included_artists.extend(value)
@@ -205,6 +207,21 @@ class SearchArgumentConverter(MixedArgsConverter):
 
                 for size_arg in value:
                     parse_size_arg(size_arg, search_arguments)
+            elif "order".startswith(key):
+                if search_arguments.order_by is not None or len(value) > 1:
+                    raise ValueError("multiple order arguments encountered")
+
+                order_arg = value[0].lower()
+
+                if order_arg[0] == "-":
+                    exclude = not exclude
+                    order_arg = order_arg[1:]
+
+                if order_arg not in ("size", "date"):
+                    raise ValueError(f"invalid order argument: '{order_arg}', use 'size' or 'date'")
+
+                search_arguments.order_by = order_arg
+                search_arguments.reverse_order = exclude
 
         if search_arguments.page is None:
             search_arguments.page = 1
@@ -244,7 +261,7 @@ async def search_entries(query: SearchArguments) -> SearchResults:
         query_builder.add_artist_filter(include=query.included_artists, exclude=query.excluded_artists)
         query_builder.add_search_filter(include=query.included_keywords, exclude=query.excluded_keywords)
 
-        query_builder.order_by(query.order_by)
+        query_builder.order_by(query.order_by, reverse=query.reverse_order)
 
         query_builder.add_size_filter(min_size=query.min_size, max_size=query.max_size)
 

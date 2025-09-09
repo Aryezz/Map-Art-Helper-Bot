@@ -1,10 +1,10 @@
 import logging
 import datetime
-from typing import Iterable, Literal
+from typing import Iterable, Literal, Any
 
 import sqlalchemy.ext.asyncio
 from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_, DateTime, Boolean, \
-    not_, and_
+    not_, and_, Select, asc
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import relationship
@@ -175,13 +175,19 @@ class Session:
 class MapArtQueryBuilder:
     def __init__(self, session):
         self.session: sqlalchemy.ext.asyncio.AsyncSession = session
-        self.query = select(MapArtArchiveDBEntry)
+        self.query: Select[Any] = select(MapArtArchiveDBEntry)
 
-    def order_by(self, field: Literal["size", "date"]):
+    def order_by(self, field: Literal["size", "date"], reverse: bool = False):
         if field == "size":
-            self.query = self.query.order_by(desc(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height), MapArtArchiveDBEntry.create_date)
+            if not reverse:
+                self.query = self.query.order_by(desc(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height), asc(MapArtArchiveDBEntry.create_date))
+            else:
+                self.query = self.query.order_by(asc(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height), desc(MapArtArchiveDBEntry.create_date))
         elif field == "date":
-            self.query = self.query.order_by(MapArtArchiveDBEntry.create_date)
+            if not reverse:
+                self.query = self.query.order_by(asc(MapArtArchiveDBEntry.create_date))
+            else:
+                self.query = self.query.order_by(desc(MapArtArchiveDBEntry.create_date))
 
     def add_size_filter(self, min_size=None, max_size=None):
         if min_size is not None:
