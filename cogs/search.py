@@ -12,10 +12,17 @@ from map_archive_entry import MapArtType, MapArtPalette, MapArtArchiveEntry
 order_by_arg = Literal["size", "date"]
 
 
+@dataclass
+class SearchArgument:
+    exclude: bool
+    key: str | None
+    value: str
+    raw_arg: str
+
+
 class MixedArgsConverter(commands.Converter):
-    async def convert(self, ctx, argument) -> tuple[list[str], dict[str, list[str]]]:
-        args = []
-        kwargs = defaultdict(list)
+    async def convert(self, ctx, argument) -> list[SearchArgument]:
+        arguments: list[SearchArgument] = []
 
         argument = argument.lstrip()
 
@@ -24,26 +31,36 @@ class MixedArgsConverter(commands.Converter):
             if match := re.match(r"(?P<key>\S+)\s*:\s*\"(?P<value>([^\"\\]|\\.)*)\"", argument):
                 key = match.group("key")
                 value = re.sub(r"\\(.)", r"\1", match.group("value"))
-                kwargs[key].append(value)
-                argument = argument[match.end():].lstrip()
+                if exclude := key.startswith("-"):
+                    key = key[1:]
+
+                arguments.append(SearchArgument(exclude, key, value, match.group(0)))
             # keyword argument with plain value, e.g. key: value
             elif match := re.match(r"(?P<key>\S+)\s*:\s*(?P<value>\S+)", argument):
                 key = match.group("key")
                 value = match.group("value")
-                kwargs[key].append(value)
-                argument = argument[match.end():].lstrip()
+                if exclude := key.startswith("-"):
+                    key = key[1:]
+
+                arguments.append(SearchArgument(exclude, key, value, match.group(0)))
             # argument with quoted value, e.g. "value quoted"
-            elif match := re.match(r"\"(?P<value>([^\"\\]|\\.)*)\"", argument):
-                args.append(re.sub(r"\\(.)", r"\1", match.group("value")))
-                argument = argument[match.end():].lstrip()
+            elif match := re.match(r"-?\"(?P<value>([^\"\\]|\\.)*)\"", argument):
+                value = re.sub(r"\\(.)", r"\1", match.group("value"))
+                exclude = match.group(0).startswith("-")
+
+                arguments.append(SearchArgument(exclude, None, value, match.group(0)))
             # argument with plain value, e.g. value
             elif match := re.match(r"(?P<value>\S+)", argument):
-                args.append(match.group("value"))
-                argument = argument[match.end():].lstrip()
+                value = match.group("value")
+                exclude = value.startswith("-")
+
+                arguments.append(SearchArgument(exclude, None, value, match.group(0)))
             else:
                 raise ValueError(f"cannot continue parsing `{argument}`")
 
-        return args, kwargs
+            argument = argument[match.end():].lstrip()
+
+        return arguments
 
 
 @dataclass
@@ -148,91 +165,85 @@ class SearchArgumentConverter(MixedArgsConverter):
 
     async def convert(self, ctx, argument):
         cleaned_args = re.sub(r"https?://discord.com/channels/\d+/\d+/(\d+)", r"\1", argument)
-        args, kwargs = await super().convert(ctx, cleaned_args)
+        arguments = await super().convert(ctx, cleaned_args)
 
         search_arguments = SearchArguments()
 
-        for arg in args:
-            if re.fullmatch(r"-?\d{1,3}", arg):
-                if search_arguments.page is not None:
-                    raise ValueError("multiple page arguments encountered")
+        for arg in arguments:
+            if arg.key is None:
+                if re.fullmatch(r"-?\d{1,3}", arg.value):
+                    if search_arguments.page is not None:
+                        raise ValueError("multiple page arguments encountered")
 
-                search_arguments.page = int(arg)
-                continue
+                    search_arguments.page = int(arg.value)
+                    continue
 
-            if parse_size_arg(arg, search_arguments):
-                continue
+                search_arguments.non_page_args.append(arg.raw_arg)
 
-            search_arguments.non_page_args.append(arg)
+                if parse_size_arg(arg.value, search_arguments):
+                    continue
 
-            if arg in self.filter_flat_options:
-                search_arguments.excluded_types.append(MapArtType.FLAT)
-                search_arguments.excluded_types.append(MapArtType.DUALLAYERED)
-                self.default_min_size = min(self.default_min_size, 8)
-            elif arg in self.filter_carpet_only_options:
-                search_arguments.excluded_palettes.append(MapArtPalette.CARPETONLY)
-            elif arg == "-dup":
-                search_arguments.filter_duplicates = True
-            else:
-                self.default_min_size = min(self.default_min_size, 0)
-                if arg.startswith("-"):
-                    search_arguments.excluded_keywords.append(arg[1:])
+                if arg.value in self.filter_flat_options:
+                    search_arguments.excluded_types.append(MapArtType.FLAT)
+                    search_arguments.excluded_types.append(MapArtType.DUALLAYERED)
+                    self.default_min_size = min(self.default_min_size, 8)
+                elif arg.value in self.filter_carpet_only_options:
+                    search_arguments.excluded_palettes.append(MapArtPalette.CARPETONLY)
+                elif arg.value == "-dup":
+                    search_arguments.filter_duplicates = True
                 else:
-                    search_arguments.included_keywords.append(arg)
+                    self.default_min_size = min(self.default_min_size, 0)
+                    if arg.exclude:
+                        search_arguments.excluded_keywords.append(arg.value)
+                    else:
+                        search_arguments.included_keywords.append(arg.value)
 
-        for (key, value) in kwargs.items():
-            if exclude := key.startswith("-"):
-                key = key[1:]
+            else:
+                if "page".startswith(arg.key):
+                    if arg.exclude:
+                        raise ValueError("cannot use exclusion for argument `page`")
+                    if search_arguments.page is not None:
+                        raise ValueError("multiple page arguments encountered")
 
-            if "page".startswith(key):
-                if exclude:
-                    raise ValueError("cannot use exclusion for argument `page`")
-                if search_arguments.page is not None or len(value) > 1:
-                    raise ValueError("multiple page arguments encountered")
+                    search_arguments.page = int(arg.value)
+                    continue
+                elif "artist".startswith(arg.key):
+                    if arg.exclude:  search_arguments.excluded_artists.append(arg.value)
+                    else:        search_arguments.included_artists.append(arg.value)
+                elif "type".startswith(arg.key):
+                    map_types = get_map_type(arg.value)
+                    if arg.exclude:  search_arguments.excluded_types.append(map_types)
+                    else:        search_arguments.included_types.append(map_types)
+                elif "palette".startswith(arg.key):
+                    map_palettes = get_map_palette(arg.value)
+                    if arg.exclude:  search_arguments.excluded_palettes.append(map_palettes)
+                    else:        search_arguments.included_palettes.append(map_palettes)
+                elif "size".startswith(arg.key):
+                    if arg.exclude:
+                        raise ValueError("cannot use exclusion for argument `size`")
 
-                search_arguments.page = int(value[0])
-                continue
-            elif "artist".startswith(key):
-                key = "artist"
-                if exclude:  search_arguments.excluded_artists.extend(value)
-                else:        search_arguments.included_artists.extend(value)
-            elif "type".startswith(key):
-                key = "type"
-                map_types = [get_map_type(t) for t in value]
-                if exclude:  search_arguments.excluded_types.extend(map_types)
-                else:        search_arguments.included_types.extend(map_types)
-            elif "palette".startswith(key):
-                key = "palette"
-                map_palettes = [get_map_palette(p) for p in value]
-                if exclude:  search_arguments.excluded_palettes.extend(map_palettes)
-                else:        search_arguments.included_palettes.extend(map_palettes)
-            elif "size".startswith(key):
-                key = "size"
-                if exclude:
-                    raise ValueError("cannot use exclusion for argument `size`")
+                    for size_arg in arg.value:
+                        parse_size_arg(size_arg, search_arguments)
+                elif "order".startswith(arg.key):
+                    if search_arguments.order_by is not None:
+                        raise ValueError("multiple order arguments encountered")
 
-                for size_arg in value:
-                    parse_size_arg(size_arg, search_arguments)
-            elif "order".startswith(key):
-                key = "order"
-                if search_arguments.order_by is not None or len(value) > 1:
-                    raise ValueError("multiple order arguments encountered")
+                    order_arg = arg.value.lower()
 
-                order_arg = value[0].lower()
+                    reverse = arg.exclude
+                    if order_arg[0] == "-":
+                        reverse = not reverse
+                        order_arg = order_arg[1:]
 
-                if order_arg[0] == "-":
-                    exclude = not exclude
-                    order_arg = order_arg[1:]
+                    if order_arg not in ("size", "date"):
+                        raise ValueError(f"invalid order argument: '{order_arg}', use 'size' or 'date'")
 
-                if order_arg not in ("size", "date"):
-                    raise ValueError(f"invalid order argument: '{order_arg}', use 'size' or 'date'")
+                    search_arguments.order_by = order_arg
+                    search_arguments.reverse_order = reverse
+                else:
+                    raise ValueError("unknown key, aborting")
 
-                value[0] = order_arg
-                search_arguments.order_by = order_arg
-                search_arguments.reverse_order = exclude
-
-            for v in value:
-                search_arguments.non_page_args.append(f"{'-' if exclude else ''}{key}:\"{v}\"")
+                search_arguments.non_page_args.append(arg.raw_arg)
 
         if search_arguments.page is None:
             search_arguments.page = 1
