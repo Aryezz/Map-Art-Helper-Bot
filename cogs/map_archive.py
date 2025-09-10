@@ -58,7 +58,7 @@ async def format_entry_list(ctx: commands.Context, search_results: SearchResults
     lines = [line_formatter(i, entry) for (i, entry) in enumerate(page_entries)]
     message += "\n".join(lines)
 
-    page_info = f"Page {search_results.page}/{max_page}"
+    page_info = f"Page {search_results.page}/{max_page}, {len(search_results.results)} {'results' if len(search_results.results) != 1 else 'result'}"
     command_help = ""
 
     filters_joined = (' ' + ' '.join(search_results.non_page_args)) if search_results.non_page_args else ""
@@ -67,7 +67,7 @@ async def format_entry_list(ctx: commands.Context, search_results: SearchResults
     elif search_results.page > 1:  # only show previous page hint if not on first page
         command_help = f" - use_ `{ctx.clean_prefix}{ctx.invoked_with} {search_results.page - 1}{filters_joined}` _to see previous page"
 
-    message += f"\n\n_{page_info} {command_help}_"
+    message += f"\n\n-# _{page_info}{command_help}_"
     return message
 
 
