@@ -171,6 +171,11 @@ class Session:
         for db_entry in db_entries:
             await self.session.delete(db_entry)
 
+    async def get_random_map(self) -> MapArtArchiveEntry:
+        query = select(MapArtArchiveDBEntry).order_by(func.random()).limit(1)
+        entry = (await self.session.execute(query)).scalars().first()
+        return entry.as_entry() if entry is not None else None
+
 
 class MapArtQueryBuilder:
     def __init__(self, session):

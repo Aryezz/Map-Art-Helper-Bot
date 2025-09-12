@@ -250,6 +250,15 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             await ctx.send("\n".join(lines[6:]))
 
     @checks.is_in_bot_channel()
+    @commands.command()
+    async def random(self, ctx: commands.Context):
+        async with sqla_db.Session() as db:
+            entry = await db.get_random_map()
+
+        if entry is not None:
+            await ctx.send(view=get_detail_view(entry))
+
+    @checks.is_in_bot_channel()
     @commands.command(aliases=["largest"], rest_is_raw=True)
     async def biggest(self, ctx: commands.Context, *, search_args: Annotated[
         SearchArguments, SearchArgumentConverter(default_min_size=32, default_order_by="size")]):
