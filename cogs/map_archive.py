@@ -151,6 +151,9 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     async def before_updating_archive(self):
         await self.bot.wait_until_ready()
 
+    async def get_entry_message_content(self, entry: MapArtArchiveEntry) -> str:
+        return (await self.archive_channel.fetch_message(entry.message_id)).clean_content
+
     @has_role("staff")
     @commands.command(aliases=["e", "ea", "editall"], hidden=True, rest_is_raw=True)
     async def edit(self, ctx: commands.Context, *, search_args: Annotated[
@@ -168,7 +171,8 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
                     f"multiple results for this search, use `{ctx.clean_prefix}editall` to edit multiple maps")
                 return
 
-            await ctx.send(view=MapEntityEditorView(ctx.author, results[0]))
+            message_content: str = await self.get_entry_message_content(results[0])
+            await ctx.send(view=MapEntityEditorView(ctx.author, results[0], message_content))
         elif ctx.invoked_with in ("ea", "editall"):
             # mass edit semantics
             self.cancel_queue.discard(ctx.author.id)
@@ -176,7 +180,9 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
                 if ctx.author.id in self.cancel_queue:
                     self.cancel_queue.discard(ctx.author.id)
                     return
-                editor_view = MapEntityEditorView(ctx.author, entry)
+
+                message_content: str = await self.get_entry_message_content(entry)
+                editor_view = MapEntityEditorView(ctx.author, entry, message_content)
                 await ctx.send(view=editor_view)
                 await editor_view.wait()
 

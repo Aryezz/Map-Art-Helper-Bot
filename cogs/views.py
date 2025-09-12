@@ -7,6 +7,7 @@ import discord
 from discord import ui
 from discord.ext.commands import Bot
 
+import config
 import sqla_db
 from cogs.base_view import BaseView
 from map_archive_entry import MapArtArchiveEntry, MapArtType, MapArtPalette
@@ -205,9 +206,10 @@ class DeleteEntryButton(ui.Button['MapEntityEditorView']):
 class MapEntityEditorView(BaseView):
     row = ui.ActionRow()
 
-    def __init__(self, user, entry: MapArtArchiveEntry, timeout=180):
+    def __init__(self, user, entry: MapArtArchiveEntry, message_content: str, timeout=180):
         super().__init__(user=user, timeout=timeout)
         self.entry = entry
+        self.message_content = message_content
         self.update_view()
 
     def update_view(self):
@@ -217,7 +219,12 @@ class MapEntityEditorView(BaseView):
 
         container = ui.Container()
         header = ui.Section(
-            ui.TextDisplay(f"# Map Entry Settings <:mcmap:349454913526562816>\n[Jump to message]({self.entry.link})"),
+            ui.TextDisplay(
+                f"# Map Entry Settings <:mcmap:349454913526562816>\n" +
+                f"[Jump to message]({self.entry.link})\n" +
+                "### Message text\n" +
+                ("> " + self.message_content.replace("\n", "\n> ") if self.message_content else "")
+            ),
             accessory=ui.Thumbnail(thumbnail_url, spoiler=self.entry.flagged)
         )
         container.add_item(header)
