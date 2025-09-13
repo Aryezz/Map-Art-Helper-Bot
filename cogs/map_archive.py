@@ -228,8 +228,6 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             use "-" to negate arguments, e.g. -type:flat to filter flat maps.
         """
 
-        await asyncio.sleep(5)
-
         try:
             search_results = await search_entries(search_args)
         except ValueError as error:
