@@ -90,13 +90,19 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     async def fix_attributes(self, entry: MapArtLLMOutput) -> Optional[MapArtArchiveEntry]:
         message = await self.archive_channel.fetch_message(entry.message_id)
 
+        fixed_artists = []
+        for artist in entry.artists:
+            fixed_artist = artist.replace("\r", "").replace("\n", "").strip()
+            if fixed_artist:
+                fixed_artists.append(fixed_artist)
+
         return MapArtArchiveEntry(
             width=entry.width,
             height=entry.height,
             map_type=entry.map_type,
             palette=entry.palette,
             name=entry.name,
-            artists=entry.artists,
+            artists=fixed_artists,
             notes=entry.notes,
             message_id=entry.message_id,
 
@@ -209,8 +215,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         async with sqla_db.Session() as db:
             await db.add_maps(final_entries)
 
-            if not config.dev_mode:
-                await ctx.send(f"processed 1 message, added {len(final_entries)} maps")
+            await ctx.send(f"processed 1 message, added {len(final_entries)} maps")
 
     @checks.is_in_bot_channel()
     @commands.command(rest_is_raw=True)

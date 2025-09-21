@@ -52,7 +52,7 @@ async def process_messages(messages: List[discord.Message]) -> List[MapArtLLMOut
         "For the message_id field, always use the message ID of the message containing the image (link or attachment). Never return a message_id which is not contained in the input. "
         "If there are special notable additional infos in the message, add them to notes. "
         "If no name is not provided, try to extract a suitable name from the attachment url, if the url contains no suitable name, use the name \"unknown\". Never use the file extension in the name.\n\n"
-    ) + json.dumps(message_dicts)
+    ) + json.dumps(message_dicts, ensure_ascii=False)
     generate_content_config = types.GenerateContentConfig(
         response_mime_type="application/json",
         response_schema=list[MapArtLLMOutput]

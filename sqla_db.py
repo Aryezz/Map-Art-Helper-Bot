@@ -57,6 +57,12 @@ class MapArtArchiveDBEntry(Base):
         return self.create_date.replace(tzinfo=datetime.UTC)
 
     def as_entry(self):
+        fixed_artists = []
+        for artist in self.artists:
+            fixed_artist = artist.name.replace("\r", "").replace("\n", "").strip()
+            if fixed_artist:
+                fixed_artists.append(fixed_artist)
+
         return MapArtArchiveEntry(
             map_id=self.map_id,
             width=self.width,
@@ -64,7 +70,7 @@ class MapArtArchiveDBEntry(Base):
             map_type=self.type,
             palette=self.palette,
             name=self.name,
-            artists=[artist.name for artist in self.artists],
+            artists=fixed_artists,
             notes=self.notes,
             image_url=self.image_url,
             create_date=self.create_date_utc,
