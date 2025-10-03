@@ -200,11 +200,14 @@ class MapArtQueryBuilder:
             else:
                 self.query = self.query.order_by(desc(MapArtArchiveDBEntry.create_date))
 
-    def add_size_filter(self, min_size=None, max_size=None):
+    def add_size_filter(self, min_size: int | None=None, max_size: int | None=None, exact_size: tuple[int, int] | None=None):
         if min_size is not None:
             self.query = self.query.where(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height >= min_size)
         if max_size is not None:
             self.query = self.query.where(MapArtArchiveDBEntry.width * MapArtArchiveDBEntry.height <= max_size)
+        if exact_size is not None:
+            width, height = exact_size
+            self.query = self.query.where(and_(MapArtArchiveDBEntry.width == width, MapArtArchiveDBEntry.height == height))
 
     def add_type_filter(self, include: list[MapArtArchiveEntry]=None, exclude: list[MapArtArchiveEntry]=None):
         if include is not None and len(include) >= 1:

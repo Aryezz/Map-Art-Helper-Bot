@@ -30,31 +30,35 @@ class MixedArgsConverter(commands.Converter):
             # keyword argument with quoted value, e.g. key: "value quoted"
             if match := re.match(r"(?P<key>\S+)\s*:\s*\"(?P<value>([^\"\\]|\\.)*)\"", argument):
                 key = match.group("key")
-                value = re.sub(r"\\(.)", r"\1", match.group("value"))
-                if exclude := key.startswith("-"):
-                    key = key[1:]
+                value = re.sub(r"\\(.)", r"\1", match.group("value")).strip()
+                if value:
+                    if exclude := key.startswith("-"):
+                        key = key[1:]
 
-                arguments.append(SearchArgument(exclude, key, value, match.group(0)))
+                    arguments.append(SearchArgument(exclude, key, value, match.group(0)))
             # keyword argument with plain value, e.g. key: value
             elif match := re.match(r"(?P<key>\S+)\s*:\s*(?P<value>\S+)", argument):
                 key = match.group("key")
-                value = match.group("value")
-                if exclude := key.startswith("-"):
-                    key = key[1:]
+                value = match.group("value").strip()
+                if value:
+                    if exclude := key.startswith("-"):
+                        key = key[1:]
 
-                arguments.append(SearchArgument(exclude, key, value, match.group(0)))
+                    arguments.append(SearchArgument(exclude, key, value, match.group(0)))
             # argument with quoted value, e.g. "value quoted"
             elif match := re.match(r"-?\"(?P<value>([^\"\\]|\\.)*)\"", argument):
-                value = re.sub(r"\\(.)", r"\1", match.group("value"))
-                exclude = match.group(0).startswith("-")
+                value = re.sub(r"\\(.)", r"\1", match.group("value")).strip()
+                if value:
+                    exclude = match.group(0).startswith("-")
 
-                arguments.append(SearchArgument(exclude, None, value, match.group(0)))
+                    arguments.append(SearchArgument(exclude, None, value, match.group(0)))
             # argument with plain value, e.g. value
             elif match := re.match(r"(?P<value>\S+)", argument):
-                value = match.group("value")
+                value = match.group("value").strip()
                 exclude = value.startswith("-")
 
-                arguments.append(SearchArgument(exclude, None, value, match.group(0)))
+                if value:
+                    arguments.append(SearchArgument(exclude, None, value, match.group(0)))
             else:
                 raise ValueError(f"cannot continue parsing `{argument}`")
 
@@ -76,6 +80,7 @@ class SearchArguments:
 
     min_size: int | None = None
     max_size: int | None = None
+    exact_size: tuple[int, int] | None = None
 
     order_by: order_by_arg = None
     reverse_order: bool = False
@@ -86,7 +91,31 @@ class SearchArguments:
 
 
 def parse_size_arg(arg: str, search_args: SearchArguments) -> bool:
-    if match := re.match(r"(?P<qualifier>[><]=?|=)(?P<size>\d+)", arg):
+    if match := re.fullmatch(r"(?P<total_size>\d+)", arg):
+        size = int(match.group("total_size"))
+
+        if size == 0:
+            raise ValueError("Invalid size argument, total size cannot be 0")
+        if search_args.min_size is not None or search_args.max_size is not None:
+            raise ValueError("cannot mix size argument types")
+
+        search_args.min_size = size
+        search_args.max_size = size
+
+        return True
+    elif match := re.fullmatch(r"(?P<width>\d+)x(?P<height>\d+)", arg):
+        width = int(match.group("width"))
+        height = int(match.group("height"))
+
+        if width == 0 or height == 0:
+            raise ValueError("Invalid size argument, width and height need to be larger than 0")
+        if search_args.min_size is not None or search_args.max_size is not None:
+            raise ValueError("cannot mix size argument types")
+
+        search_args.exact_size = (width, height)
+
+        return True
+    elif match := re.fullmatch(r"(?P<qualifier>[><]=?|=)(?P<size>\d+)", arg):
         size = int(match.group("size"))
         qualifier = match.group("qualifier")
 
@@ -96,7 +125,10 @@ def parse_size_arg(arg: str, search_args: SearchArguments) -> bool:
             size -= 1
 
         if size < 1:
-            raise ValueError("Invalid size argument, use a qualifier (>, >=, <, <=, =) and a size")
+            raise ValueError("Invalid size argument, use a qualifier (>, >=, <, <=, =) and a size or an exact format like 4x3")
+
+        if search_args.exact_size is not None:
+            raise ValueError("cannot mix size argument types")
 
         if qualifier.startswith(">") or qualifier == "=":
             if search_args.min_size is not None:
@@ -221,9 +253,8 @@ class SearchArgumentConverter(MixedArgsConverter):
                 elif "size".startswith(arg.key):
                     if arg.exclude:
                         raise ValueError("cannot use exclusion for argument `size`")
-
-                    for size_arg in arg.value:
-                        parse_size_arg(size_arg, search_arguments)
+                    if not parse_size_arg(arg.value, search_arguments):
+                        raise ValueError(f"cannot parse value `{arg.value}` for argument `size`")
                 elif "order".startswith(arg.key):
                     if search_arguments.order_by is not None:
                         raise ValueError("multiple order arguments encountered")
@@ -285,7 +316,7 @@ async def search_entries(query: SearchArguments) -> SearchResults:
 
         query_builder.order_by(query.order_by, reverse=query.reverse_order)
 
-        query_builder.add_size_filter(min_size=query.min_size, max_size=query.max_size)
+        query_builder.add_size_filter(min_size=query.min_size, max_size=query.max_size, exact_size=query.exact_size)
 
         results.results = await query_builder.execute()
 
