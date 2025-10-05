@@ -91,19 +91,7 @@ class SearchArguments:
 
 
 def parse_size_arg(arg: str, search_args: SearchArguments) -> bool:
-    if match := re.fullmatch(r"(?P<total_size>\d+)", arg):
-        size = int(match.group("total_size"))
-
-        if size == 0:
-            raise ValueError("Invalid size argument, total size cannot be 0")
-        if search_args.min_size is not None or search_args.max_size is not None:
-            raise ValueError("cannot mix size argument types")
-
-        search_args.min_size = size
-        search_args.max_size = size
-
-        return True
-    elif match := re.fullmatch(r"(?P<width>\d+)x(?P<height>\d+)", arg):
+    if match := re.fullmatch(r"(?P<width>\d+)x(?P<height>\d+)", arg):
         width = int(match.group("width"))
         height = int(match.group("height"))
 
