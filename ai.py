@@ -25,11 +25,15 @@ class MapArtLLMOutput(BaseModel):
 
 
 def serialize_message(message: discord.Message) -> Dict:
+    attachments = message.attachments
+    for snapshot in message.message_snapshots:
+        attachments.extend(snapshot.attachments)
+
     return {
         "author": message.author.display_name,
         "content": message.clean_content + "\n\n" + "\n\n".join(snapshot.content for snapshot in message.message_snapshots),
         "message_id": message.id,
-        "attachments": [a.url.split("?")[0].split("/")[-1] for a in message.attachments],
+        "attachments": [a.url.split("?")[0].split("/")[-1] for a in attachments],
     }
 
 
