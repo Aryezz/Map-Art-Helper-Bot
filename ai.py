@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import List, Dict
 
 import discord
 from google import genai
@@ -19,12 +18,12 @@ class MapArtLLMOutput(BaseModel):
     map_type: MapArtType
     palette: MapArtPalette
     name: str
-    artists: List[str]
+    artists: list[str]
     notes: str
     message_id: int
 
 
-def serialize_message(message: discord.Message) -> Dict:
+def serialize_message(message: discord.Message) -> dict:
     attachments = message.attachments
     for snapshot in message.message_snapshots:
         attachments.extend(snapshot.attachments)
@@ -37,7 +36,7 @@ def serialize_message(message: discord.Message) -> Dict:
     }
 
 
-async def process_messages(messages: List[discord.Message]) -> List[MapArtLLMOutput]:
+async def process_messages(messages: list[discord.Message]) -> list[MapArtLLMOutput]:
     client = genai.Client(
         api_key=config.gemini_token,
     )
