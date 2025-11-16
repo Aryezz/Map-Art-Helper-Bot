@@ -198,7 +198,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         self.cancel_queue.add(ctx.author.id)
         await ctx.reply("multi-edit cancelled", ephemeral=True)
 
-    @is_owner()
+    @has_role("staff")
     @commands.command(hidden=True)
     async def import_map(self, ctx, message: discord.Message):
         msg = await self.archive_channel.fetch_message(message.id)
@@ -209,13 +209,52 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             final_entries: list[MapArtArchiveEntry] = [await self.fix_attributes(entry) for entry in ai_processed]
         except DiscordException:
             logger.error("error in LLM returned data, skipping")
-            await ctx.send.send("error in LLM returned data, skipping")
+            await ctx.send("error in LLM returned data, skipping")
             return
 
         async with sqla_db.Session() as db:
             await db.add_maps(final_entries)
 
             await ctx.send(f"processed 1 message, added {len(final_entries)} maps")
+
+            for entry in final_entries:
+                await self.bot_log_channel.send(view=get_detail_view(entry))
+
+    @has_role("staff")
+    @commands.command(hidden=True)
+    async def reimport_map(self, ctx, message: discord.Message):
+        msg = await self.archive_channel.fetch_message(message.id)
+
+        async with sqla_db.Session() as db:
+            query_builder = db.get_query_builder()
+            query_builder.add_search_filter([str(msg.id)])
+
+            previous_entries = await query_builder.execute()
+
+            if len(previous_entries) != 1:
+                logger.error("not exactly one entry returned, skipping")
+                await ctx.send("not exactly one entry returned, skipping")
+                return
+
+            previous_entry = previous_entries[0]
+
+        ai_processed: list[MapArtLLMOutput] = await ai.process_messages([msg])
+
+        try:
+            final_entries: list[MapArtArchiveEntry] = [await self.fix_attributes(entry) for entry in ai_processed]
+        except DiscordException:
+            logger.error("error in LLM returned data, skipping")
+            await ctx.send("error in LLM returned data, skipping")
+            return
+
+        async with sqla_db.Session() as db:
+            await db.delete_maps([previous_entry])
+            await db.add_maps(final_entries)
+
+            await ctx.send(f"deleted 1 entry, processed 1 message, added {len(final_entries)} maps")
+
+            for entry in final_entries:
+                await self.bot_log_channel.send(view=get_detail_view(entry))
 
     @checks.is_in_bot_channel()
     @commands.command(rest_is_raw=True)

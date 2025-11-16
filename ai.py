@@ -47,14 +47,16 @@ async def process_messages(messages: list[discord.Message]) -> list[MapArtLLMOut
     contents = (
         "Process the following serialized Discord messages to extract info. "
         "The messages describe Minecraft map arts and contain some structured properties. "
-        "If there are references to original artists, you can ignore those, and just return the builders/printers/mappers as the artists. "
+        "If there are references to original artists, you can put these in the notes, but not as artists, just return the builders/printers/mappers as the artists. "
         "If no size is provided, you can assume 1x1. For all sizes you can assume width comes before height. "
         "The output should contain one entry for every message with one or more attachments. "
         "Messages without attachments cannot ever represent an output entry, except if there are image links in the message content, which do not get recognized as attachments. "
         "Messages without attachments or image links might add relevant information for following messages. "
         "For the message_id field, always use the message ID of the message containing the image (link or attachment). Never return a message_id which is not contained in the input. "
         "If there are special notable additional infos in the message, add them to notes. "
-        "If no name is not provided, try to extract a suitable name from the attachment url, if the url contains no suitable name, use the name \"unknown\". Never use the file extension in the name.\n\n"
+        "In the very rare case that no title is provided, try to extract a suitable name from the attachment url, without the file extension. "
+        "If the url contains no suitable name, use the name \"unknown\". "
+        "A filename consisting of a generic date / time combination is not suitable.\n\n"
     ) + json.dumps(message_dicts, ensure_ascii=False)
     generate_content_config = types.GenerateContentConfig(
         response_mime_type="application/json",

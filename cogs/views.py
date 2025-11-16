@@ -117,7 +117,7 @@ class MapPaletteSelection(ui.ActionRow['MapEntityEditorView']):
 class MapDiscordAttributeEditorModal(discord.ui.Modal, title="Map Attribute Editor"):
     author_id = discord.ui.TextInput(label='Author ID')
     message_id = discord.ui.TextInput(label='Message ID')
-    image_url = discord.ui.TextInput(label='Image URL')
+    image_url = discord.ui.TextInput(label='Image URL', required=False)
     create_date = discord.ui.TextInput(label='Create Date')
 
     def __init__(self, view: 'MapEntityEditorView'):
