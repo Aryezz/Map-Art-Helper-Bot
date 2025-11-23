@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import logging
 import math
@@ -7,9 +6,8 @@ from typing import Optional, Callable, Annotated
 
 import discord
 from discord import DiscordException, ui
-from discord.app_commands.checks import has_role
+from discord.ext.commands import has_role, is_owner
 from discord.ext import commands, tasks
-from discord.ext.commands import is_owner
 
 import ai
 import config
@@ -21,6 +19,10 @@ from cogs.views import MapEntityEditorView
 from map_archive_entry import MapArtArchiveEntry
 
 logger = logging.getLogger("discord.map_archive")
+
+
+def is_staff_or_owner():
+    return commands.check_any(has_role("staff"), is_owner())
 
 
 def get_detail_view(entry: MapArtArchiveEntry):
@@ -160,7 +162,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     async def get_entry_message_content(self, entry: MapArtArchiveEntry) -> str:
         return (await self.archive_channel.fetch_message(entry.message_id)).clean_content
 
-    @has_role("staff")
+    @is_staff_or_owner()
     @commands.command(aliases=["e", "ea", "editall"], hidden=True, rest_is_raw=True)
     async def edit(self, ctx: commands.Context, *, search_args: Annotated[
         SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
@@ -192,13 +194,13 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
                 await ctx.send(view=editor_view)
                 await editor_view.wait()
 
-    @has_role("staff")
+    @is_staff_or_owner()
     @commands.command(hidden=True)
     async def cancel(self, ctx: commands.Context):
         self.cancel_queue.add(ctx.author.id)
         await ctx.reply("multi-edit cancelled", ephemeral=True)
 
-    @has_role("staff")
+    @is_staff_or_owner()
     @commands.command(hidden=True)
     async def import_map(self, ctx, message: discord.Message):
         msg = await self.archive_channel.fetch_message(message.id)
@@ -220,7 +222,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             for entry in final_entries:
                 await self.bot_log_channel.send(view=get_detail_view(entry))
 
-    @has_role("staff")
+    @is_staff_or_owner()
     @commands.command(hidden=True)
     async def reimport_map(self, ctx, message: discord.Message):
         msg = await self.archive_channel.fetch_message(message.id)
