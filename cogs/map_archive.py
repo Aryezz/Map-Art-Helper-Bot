@@ -280,11 +280,11 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             await ctx.send(str(error))
             return
 
-        message = await format_entry_list(ctx, search_results, title="Search Results")
-
         if len(search_results.results) == 1:
             await ctx.send(view=get_detail_view(search_results.results[0]))
             return
+
+        message = await format_entry_list(ctx, search_results, title="Search Results")
 
         if len(message) <= 2000:
             await ctx.send(message)
