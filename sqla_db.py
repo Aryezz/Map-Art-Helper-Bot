@@ -234,7 +234,7 @@ class MapArtQueryBuilder:
         if include is not None and len(include) >= 1:
             for search_term in include:
                 self.query = (self.query
-                .join(MapArtArchiveDBEntry.artists)
+                .join(MapArtArchiveDBEntry.artists, isouter=True)
                 .where(or_(
                     MapArtArchiveDBEntry.name.contains(search_term),
                     MapArtArtist.name.ilike(search_term),
@@ -247,7 +247,7 @@ class MapArtQueryBuilder:
         if exclude is not None and len(exclude) >= 1:
             for search_term in exclude:
                 self.query = (self.query
-                .join(MapArtArchiveDBEntry.artists)
+                .join(MapArtArchiveDBEntry.artists, isouter=True)
                 .where(not_(or_(
                     MapArtArchiveDBEntry.name.contains(search_term),
                     MapArtArtist.name.ilike(search_term),
