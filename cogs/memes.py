@@ -1,5 +1,4 @@
 import random
-import re
 from datetime import datetime
 
 from discord.ext import commands
@@ -8,13 +7,22 @@ import humanize
 
 class MemeCommands(commands.Cog, name="Memes"):
     """Pretty self-explanatory, is it not?"""
+
+    yqe_user_id = 401027856316104706  # @yqe
+    golden_user_id = 394784819499761664  # @heyitsgolden
+    tutulalasisi_user_id = 598539347838369812  # @tutulalasisi
+    tutulalasisi_command_answers = [
+        "Wtf is bro yapping about?",
+        "I ain't adding more commands, my man",
+        "That's not a real command (and never will be!)",
+        "You need professional `!!help`",
+        "\"{command_yap}\", this is how you sound",
+    ]
+
     def __init__(self, bot):
         self.bot = bot
         if not hasattr(self.bot, "yqe_message_count"):
             self.bot.yqe_message_count = 0
-
-        self.yqe_user_id = 401027856316104706  # Yqe#5135
-        self.golden_user_id = 394784819499761664  # Golden#9727
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -23,11 +31,19 @@ class MemeCommands(commands.Cog, name="Memes"):
         if message.content.startswith(self.bot.command_prefix):
             return
 
-        if message.author.id == self.yqe_user_id:
+        if message.author.id == MemeCommands.yqe_user_id:
             self.bot.yqe_message_count += 1
 
-        if message.author.id == self.golden_user_id:
+        if message.author.id == MemeCommands.golden_user_id:
             await message.add_reaction("🇦🇿")
+
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx: commands.Context, error: Exception):
+        if isinstance(error, commands.CommandNotFound):
+            if ctx.author.id == MemeCommands.tutulalasisi_user_id:
+                text = ctx.message.content
+                command_yap = "".join(a + b for (a, b) in zip(text[::2].lower(), text[1::2].upper())) + text[-1] if len(text) % 2 == 1 else ""
+                await ctx.reply(random.choice(self.tutulalasisi_command_answers).format(command_yap=command_yap))
 
     @commands.command(hidden=True)
     async def smallest(self, ctx):

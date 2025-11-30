@@ -4,7 +4,7 @@ import traceback
 from discord.ext import commands
 
 from cogs import checks
-
+from cogs.memes import MemeCommands
 
 logger = logging.getLogger("discord.mapart.exceptions")
 
@@ -20,7 +20,8 @@ class CommandErrorHandler(commands.Cog):
 
         match error:
             case commands.CommandNotFound():
-                await ctx.reply(f"Command `{ctx.clean_prefix}{ctx.invoked_with}` can't be found")
+                if ctx.author.id != MemeCommands.tutulalasisi_user_id:  # special handling for tutulalasisi in memes
+                    await ctx.reply(f"Command `{ctx.clean_prefix}{ctx.invoked_with}` can't be found")
             case commands.MissingRequiredArgument():
                 await ctx.reply("Missing Argument: " + str(error.param))
             case commands.BadArgument():
