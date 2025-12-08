@@ -42,7 +42,7 @@ class MemeCommands(commands.Cog, name="Memes"):
         if isinstance(error, commands.CommandNotFound):
             if ctx.author.id == MemeCommands.tutulalasisi_user_id:
                 text = ctx.message.content
-                command_yap = "".join(a + b for (a, b) in zip(text[::2].lower(), text[1::2].upper())) + text[-1] if len(text) % 2 == 1 else ""
+                command_yap = "".join(a + b for (a, b) in zip(text[::2].lower(), text[1::2].upper())) + (text[-1] if len(text) % 2 == 1 else "")
                 await ctx.reply(random.choice(self.tutulalasisi_command_answers).format(command_yap=command_yap))
 
     @commands.command(hidden=True)
