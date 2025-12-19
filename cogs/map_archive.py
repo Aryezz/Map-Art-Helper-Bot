@@ -189,7 +189,10 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
                     self.cancel_queue.discard(ctx.author.id)
                     return
 
-                message_content: str = await self.get_entry_message_content(entry)
+                try:
+                    message_content = await self.get_entry_message_content(entry)
+                except discord.NotFound:
+                    message_content = "(!) Message not found"
                 editor_view = MapEntityEditorView(ctx.author, entry, message_content)
                 await ctx.send(view=editor_view)
                 await editor_view.wait()
