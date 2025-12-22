@@ -114,7 +114,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             flagged=any(attachment.is_spoiler() for attachment in message.attachments),
         )
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=90)
     async def update_archive(self):
         try:
             async with sqla_db.Session() as db:
