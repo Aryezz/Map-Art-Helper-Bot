@@ -179,7 +179,10 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
                     f"multiple results for this search, use `{ctx.clean_prefix}editall` to edit multiple maps")
                 return
 
-            message_content: str = await self.get_entry_message_content(results[0])
+            try:
+                message_content = await self.get_entry_message_content(results[0])
+            except discord.NotFound:
+                message_content = "(!) Message not found"
             await ctx.send(view=MapEntityEditorView(ctx.author, results[0], message_content))
         elif ctx.invoked_with in ("ea", "editall"):
             # mass edit semantics
