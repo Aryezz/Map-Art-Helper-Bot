@@ -17,18 +17,12 @@ class LinkCommands(commands.Cog, name="Links"):
     async def mapartcraft(self, ctx):
         """Map Art Generator made by rebane2001#3716"""
         message = (
-            "https://rebane2001.com/mapartcraft/\n"
-            "made with :heart: by rebane2001#3716"
-        )
-
-        await ctx.send(message)
-
-    @commands.command(aliases=["maw", "wall"])
-    async def mapartwall(self, ctx):
-        """Map Art Wall made by rebane2001#3716"""
-        message = (
-            "https://rebane2001.com/mapartwall/\n"
-            "made with :heart: by rebane2001#3716"
+            "### Updated MapArtCraft\n"
+            "Provides additional features, maintained by mike\n"
+            "https://mike2b2t.github.io/mapartcraft/\n"
+            "### Original MapArtCraft\n"
+            "Original version by rebane2001\n"
+            "<https://rebane2001.com/mapartcraft/>"
         )
 
         await ctx.send(message)
