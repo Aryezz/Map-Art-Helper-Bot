@@ -264,8 +264,25 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             for entry in final_entries:
                 await self.bot_log_channel.send(view=get_detail_view(entry))
 
+    @is_staff_or_owner()
+    @commands.command(hidden=True)
+    async def rename_artist(self, ctx: commands.Context, old_name: str, new_name: str):
+        async with sqla_db.Session() as db:
+            query_builder = db.get_query_builder()
+            query_builder.add_artist_filter([old_name])
+
+            entries = await query_builder.execute()
+
+            for entry in entries:
+                entry.artists.remove(old_name)
+                entry.artists.append(new_name)
+
+            await db.add_maps(entries)
+
+        await ctx.reply("renamed")
+
     @checks.is_in_bot_channel()
-    @commands.command(rest_is_raw=True)
+    @commands.command(rest_is_raw=True, aliases=["s"])
     async def search(self, ctx: commands.Context, *, search_args: Annotated[
         SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
         """Search map arts in the archive
