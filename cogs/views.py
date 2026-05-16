@@ -235,9 +235,9 @@ class MapEntityEditorView(BaseView):
             ui.Section(
                 ui.TextDisplay(
                     f"## General Attributes\n" +
-                    f"### Name\n{self.entry.name}\n" +
+                    f"### Name\n{discord.utils.escape_markdown(self.entry.name)}\n" +
                     f"### Size\n{self.entry.width} x {self.entry.height}\n" +
-                    f"### Artists\n" + "\n".join(f"* {artist}" for artist in self.entry.artists) + "\n" +
+                    f"### Artists\n" + "\n".join(f"* {discord.utils.escape_markdown(artist)}" for artist in self.entry.artists) + "\n" +
                     f"### Notes\n" +
                     ("\n".join("> " + line for line in self.entry.notes.split("\n")) if self.entry.notes else "-")
                 ),

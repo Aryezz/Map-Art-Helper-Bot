@@ -29,7 +29,7 @@ def get_detail_view(entry: MapArtArchiveEntry):
     view = ui.LayoutView()
     thumbnail_url = entry.image_url or "https://minecraft.wiki/images/Barrier_%28held%29_JE2_BE2.png"
     header = ui.Section(
-        ui.TextDisplay(f"# {entry.name}\n[Jump to message in archive]({entry.link})"),
+        ui.TextDisplay(f"# {discord.utils.escape_markdown(entry.name)}\n[Jump to message in archive]({entry.link})"),
         accessory=ui.Thumbnail(thumbnail_url, spoiler=entry.flagged)
     )
     view.add_item(header)
@@ -37,7 +37,7 @@ def get_detail_view(entry: MapArtArchiveEntry):
     view.add_item(
         ui.TextDisplay(discord.utils.escape_mentions(
             f"### Size\n{entry.width} x {entry.height} ({entry.total_maps} {"map" if entry.total_maps == 1 else "maps"})\n" +
-            f"### Artists\n" + "\n".join(f"* {artist}" for artist in entry.artists) + "\n" +
+            f"### Artists\n" + "\n".join(f"* {discord.utils.escape_markdown(artist)}" for artist in entry.artists) + "\n" +
             f"### Type\n{entry.map_type.value}\n"
             f"### Palette\n{entry.palette.value}\n"
             f"### Notes\n" +
