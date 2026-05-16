@@ -53,9 +53,9 @@ class MixedArgsConverter(commands.Converter):
 
                     arguments.append(SearchArgument(exclude, None, value, match.group(0)))
             # argument with plain value, e.g. value
-            elif match := re.match(r"(?P<value>\S+)", argument):
+            elif match := re.match(r"-?(?P<value>\S+)", argument):
                 value = match.group("value").strip()
-                exclude = value.startswith("-")
+                exclude = match.group(0).startswith("-")
 
                 if value:
                     arguments.append(SearchArgument(exclude, None, value, match.group(0)))
@@ -85,9 +85,12 @@ class SearchArguments:
     order_by: order_by_arg = None
     reverse_order: bool = False
 
-    filter_duplicates: bool = False
     page: int | None = None
     non_page_args: list[str] = field(default_factory=list)
+
+    # debug arguments
+    filter_duplicates: bool = False
+    filter_no_img: bool = False
 
 
 def parse_size_arg(arg: str, search_args: SearchArguments) -> bool:
@@ -209,8 +212,10 @@ class SearchArgumentConverter(MixedArgsConverter):
                     self.default_min_size = min(self.default_min_size, 8)
                 elif arg.value in self.filter_carpet_only_options:
                     search_arguments.excluded_palettes.append(MapArtPalette.CARPETONLY)
-                elif arg.value == "-dup":
+                elif arg.raw_arg == "--dup":
                     search_arguments.filter_duplicates = True
+                elif arg.raw_arg == "--noimg":
+                    search_arguments.filter_no_img = True
                 else:
                     self.default_min_size = min(self.default_min_size, 0)
                     if arg.exclude:
@@ -298,6 +303,8 @@ async def search_entries(query: SearchArguments) -> SearchResults:
 
         if query.filter_duplicates:
             query_builder.add_duplicate_filter()
+        if query.filter_no_img:
+            query_builder.add_no_img_filter()
 
         query_builder.add_artist_filter(include=query.included_artists, exclude=query.excluded_artists)
         query_builder.add_search_filter(include=query.included_keywords, exclude=query.excluded_keywords)

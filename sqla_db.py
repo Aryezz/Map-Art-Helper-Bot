@@ -230,6 +230,9 @@ class MapArtQueryBuilder:
     def add_duplicate_filter(self):
         self.query = self.query.where(MapArtArchiveDBEntry.message_id.in_(select(MapArtArchiveDBEntry.message_id).group_by(MapArtArchiveDBEntry.message_id).having(func.count() >= 2)))
 
+    def add_no_img_filter(self):
+        self.query = self.query.where(MapArtArchiveDBEntry.image_url.in_([None, ""]))
+
     def add_search_filter(self, include=None, exclude=None):
         if include is not None and len(include) >= 1:
             for search_term in include:
