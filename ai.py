@@ -43,7 +43,7 @@ async def process_messages(messages: list[discord.Message]) -> list[MapArtLLMOut
 
     message_dicts = [serialize_message(message) for message in messages]
 
-    model = "gemini-2.5-flash-lite"
+    model = "gemini-3.1-flash-lite"
     contents = (
         "Process the following serialized Discord messages to extract info. "
         "The messages describe Minecraft map arts and contain some structured properties. "
