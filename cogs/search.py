@@ -206,11 +206,11 @@ class SearchArgumentConverter(MixedArgsConverter):
                 if parse_size_arg(arg.value, search_arguments):
                     continue
 
-                if arg.value in self.filter_flat_options:
+                if arg.raw_arg in self.filter_flat_options:
                     search_arguments.excluded_types.append(MapArtType.FLAT)
                     search_arguments.excluded_types.append(MapArtType.DUALLAYERED)
                     self.default_min_size = min(self.default_min_size, 8)
-                elif arg.value in self.filter_carpet_only_options:
+                elif arg.raw_arg in self.filter_carpet_only_options:
                     search_arguments.excluded_palettes.append(MapArtPalette.CARPETONLY)
                 elif arg.raw_arg == "--dup":
                     search_arguments.filter_duplicates = True
