@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.12-slim-bookworm
+FROM python:3.14-slim-trixie
 
 ENV PREFIX="!!"
 ENV TOKEN="YOUR TOKEN HERE"
