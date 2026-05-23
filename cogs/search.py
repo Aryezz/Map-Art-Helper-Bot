@@ -224,7 +224,24 @@ class SearchArgumentConverter(MixedArgsConverter):
                         search_arguments.included_keywords.append(arg.value)
 
             else:
-                if "page".startswith(arg.key):
+                if "palette".startswith(arg.key):
+                    map_palette = get_map_palette(arg.value)
+                    if map_palette is None:
+                        raise ValueError("couldn't parse palette value")
+
+                    if arg.exclude:  search_arguments.excluded_palettes.append(map_palette)
+                    else:            search_arguments.included_palettes.append(map_palette)
+                elif "artist".startswith(arg.key):
+                    if arg.exclude:  search_arguments.excluded_artists.append(arg.value)
+                    else:            search_arguments.included_artists.append(arg.value)
+                elif "type".startswith(arg.key):
+                    map_type = get_map_type(arg.value)
+                    if map_type is None:
+                        raise ValueError("couldn't parse type value")
+
+                    if arg.exclude:  search_arguments.excluded_types.append(map_type)
+                    else:            search_arguments.included_types.append(map_type)
+                elif "page".startswith(arg.key):
                     if arg.exclude:
                         raise ValueError("cannot use exclusion for argument `page`")
                     if search_arguments.page is not None:
@@ -232,17 +249,6 @@ class SearchArgumentConverter(MixedArgsConverter):
 
                     search_arguments.page = int(arg.value)
                     continue
-                elif "artist".startswith(arg.key):
-                    if arg.exclude:  search_arguments.excluded_artists.append(arg.value)
-                    else:        search_arguments.included_artists.append(arg.value)
-                elif "type".startswith(arg.key):
-                    map_types = get_map_type(arg.value)
-                    if arg.exclude:  search_arguments.excluded_types.append(map_types)
-                    else:        search_arguments.included_types.append(map_types)
-                elif "palette".startswith(arg.key):
-                    map_palettes = get_map_palette(arg.value)
-                    if arg.exclude:  search_arguments.excluded_palettes.append(map_palettes)
-                    else:        search_arguments.included_palettes.append(map_palettes)
                 elif "size".startswith(arg.key):
                     if arg.exclude:
                         raise ValueError("cannot use exclusion for argument `size`")
