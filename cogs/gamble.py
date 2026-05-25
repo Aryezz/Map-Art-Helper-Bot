@@ -140,8 +140,9 @@ class GambleCommands(commands.Cog, name="Gambling"):
             user = self.bot.get_user(entry.discord_id)
             if user is None:
                 return None
+            user_name = discord.utils.escape_markdown(discord.utils.escape_mentions(user.display_name))
 
-            return f"**{ranks.get(rank, f'{rank}:')} {user.display_name}** - {balance_str(entry)}, {total_bets_str(entry)} bet in total\n"
+            return f"**{ranks.get(rank, f'{rank}:')} {user_name}** - {balance_str(entry)}, {total_bets_str(entry)} bet in total\n"
 
         async with sqla_db.Session() as db:
             top_gamblers = await db.get_leaderboard()
