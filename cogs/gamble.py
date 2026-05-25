@@ -142,7 +142,7 @@ class GambleCommands(commands.Cog, name="Gambling"):
             if user is None:
                 return None
 
-            return f"**{ranks.get(rank, f'{rank}:')} {user.name}** - {entry.balance} dubloons, {entry.total_bets} total bets\n"
+            return f"**{ranks.get(rank, f'{rank}:')} {user.display_name}** - {entry.balance} dubloons, {entry.total_bets} total bets\n"
 
         async with sqla_db.Session() as db:
             top_gamblers = await db.get_leaderboard()
