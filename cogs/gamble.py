@@ -61,6 +61,9 @@ class GambleCommands(commands.Cog, name="Gamble"):
         wins = len(search_results.results)
         losses = search_results.total_maps
 
+        if wins == 0:
+            raise commands.BadArgument("can't bet on a search with no results")
+
         bet_odds = odds(wins, losses)
         await ctx.reply(
             "Your chance of winning this bet are {} / {} = {:.2f}%\n".format(wins, losses, wins / losses * 100) +
@@ -86,6 +89,9 @@ class GambleCommands(commands.Cog, name="Gamble"):
             roll = await db.get_random_map()
         
         search_results = await search_entries(search_args)
+
+        if len(search_results) == 0:
+            raise commands.BadArgument("can't bet on a search with no results")
 
         won = roll in search_results.results
 
