@@ -2,6 +2,7 @@ import logging
 import traceback
 
 from discord.ext import commands
+import humanize
 
 from cogs import checks
 from cogs.memes import MemeCommands
@@ -40,6 +41,8 @@ class CommandErrorHandler(commands.Cog):
                 await ctx.reply("A check for this command failed")
             case commands.ConversionError():
                 await ctx.reply(f"Failed to parse the provided arguments: {str(error.original)}")
+            case commands.CommandOnCooldown():
+                await ctx.reply("This command is on cooldown, try again in " + humanize.naturaldelta(error.retry_after))
             case _:
                 tb = "".join(traceback.format_exception(type(error), error, error.__traceback__))
                 message = f"An error occurred:\n```py\n{tb}\n```"

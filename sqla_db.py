@@ -26,6 +26,13 @@ artist_mapart = Table(
 )
 
 
+class Balance(Base):
+    __tablename__ = "balance"
+    discord_id = Column(Integer, primary_key=True)
+    balance = Column(Integer, default=1000)
+    bankruptcies = Column(Integer, default=0)
+
+
 class MapArtArtist(Base):
     __tablename__ = "artist"
     artist_id = Column(Integer, primary_key=True)
@@ -181,6 +188,56 @@ class Session:
         query = select(MapArtArchiveDBEntry).order_by(func.random()).limit(1)
         entry = (await self.session.execute(query)).scalars().first()
         return entry.as_entry() if entry is not None else None
+
+    async def get_total_maps(self) -> MapArtArchiveEntry:
+        query = select(func.count()).select_from(MapArtArchiveDBEntry)
+        return (await self.session.execute(query)).scalars().first()
+
+    async def get_balance(self, user_id: int) -> Balance:
+        query = select(Balance).where(Balance.discord_id.is_(user_id));
+        entry = (await self.session.execute(query)).scalars().first()
+
+        if entry is not None:
+            return entry
+        
+        instance = Balance()
+        instance.discord_id = user_id
+        self.session.add(instance)
+        return instance
+
+    async def add_balance(self, user_id: int, amount: int) -> Balance:
+        query = select(Balance).where(Balance.discord_id.is_(user_id));
+        entry = (await self.session.execute(query)).scalars().first()
+
+        if entry is None:
+            entry = Balance()
+            entry.discord_id = user_id
+            self.session.add(entry)
+        
+        entry.balance += amount
+        return entry
+
+    async def bankrupt(self, user_id: int) -> Balance:
+        query = select(Balance).where(Balance.discord_id.is_(user_id));
+        entry = (await self.session.execute(query)).scalars().first()
+
+        if entry is None:
+            entry = Balance()
+            entry.discord_id = user_id
+            self.session.add(entry)
+        
+        if entry.balance > 0:
+            raise ValueError("User can't go bankrupt, they are not broke")
+        
+        entry.balance = 1000
+        entry.bankruptcies += 1
+        return entry
+
+    async def get_leaderboard(self, limit: int = 10) -> list[Balance]:
+        query = select(Balance).order_by(Balance.balance).limit(limit)
+        entries = (await self.session.execute(query)).scalars().all()
+
+        return list(entries)
 
 
 class MapArtQueryBuilder:

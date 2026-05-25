@@ -289,6 +289,7 @@ class SearchArgumentConverter(MixedArgsConverter):
 class SearchResults:
     page: int
     non_page_args: list[str]
+    total_maps: int = 0
     results: list[MapArtArchiveEntry] = field(default_factory=list)
 
     def max_page(self, page_size: int = 10):
@@ -320,6 +321,7 @@ async def search_entries(query: SearchArguments) -> SearchResults:
         query_builder.add_size_filter(min_size=query.min_size, max_size=query.max_size, exact_size=query.exact_size)
 
         results.results = await query_builder.execute()
+        results.total_maps = await db.get_total_maps()
 
     if len(results.results) == 0:
         raise ValueError(f"No results")

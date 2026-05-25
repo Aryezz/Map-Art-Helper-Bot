@@ -1,7 +1,9 @@
 venv/
 .idea/
+.vscode/
 __pycache__/
 
 config.py
 
 **/*.db
+launch.json

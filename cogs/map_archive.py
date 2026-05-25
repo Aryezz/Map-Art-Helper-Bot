@@ -21,13 +21,17 @@ from map_archive_entry import MapArtArchiveEntry
 logger = logging.getLogger("discord.map_archive")
 
 
-def get_detail_view(entry: MapArtArchiveEntry):
+def get_detail_view(entry: MapArtArchiveEntry, message: str | None = None):
     view = ui.LayoutView()
     thumbnail_url = entry.image_url or "https://minecraft.wiki/images/Barrier_%28held%29_JE2_BE2.png"
     header = ui.Section(
         ui.TextDisplay(f"# {discord.utils.escape_markdown(entry.name)}\n[Jump to message in archive]({entry.link})"),
         accessory=ui.Thumbnail(thumbnail_url, spoiler=entry.flagged)
     )
+
+    if message is not None:
+        view.add_item(ui.TextDisplay(message))
+
     view.add_item(header)
     view.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
     view.add_item(
