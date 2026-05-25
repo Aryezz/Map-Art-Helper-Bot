@@ -62,7 +62,17 @@ class GambleCommands(commands.Cog, name="Gambling"):
 
     @commands.command()
     async def odds(self, ctx: commands.Context, bet: int | None = 100, *, search_args: Annotated[SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
-        """Check the odds of a search"""
+        """Check the odds of a search
+
+        Usage: !!odds [bet] search_args
+
+        Parameters
+        ----------
+        bet : int, optional
+            amount of dubloons to bet
+        search_args : list, optional
+            same search format as !!search
+        """
 
         if bet is None:
             bet = 100
@@ -88,12 +98,22 @@ class GambleCommands(commands.Cog, name="Gambling"):
         async with sqla_db.Session() as db:
             balance = await db.add_balance(ctx.author.id, 200)
 
-        await ctx.reply(f"Your new balance is {balance_str(balance)}!")
+        await ctx.reply(f"200 dubloons claimed, your new balance is {balance_str(balance)}!\nCheck back tomorrow to work again.")
 
     
     @commands.command(aliases=["bet", "gamba"])
     async def gamble(self, ctx: commands.Context, bet: int, *, search_args: Annotated[SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
-        """Gamble some money on a random map in the archive"""
+        """Gamble some money on a random map in the archive
+
+        Usage: !!gamble bet search_args
+
+        Parameters
+        ----------
+        bet : int, optional
+            amount of dubloons to bet
+        search_args : list, optional
+            same search format as !!search
+        """
 
         if bet <= 0:
             raise commands.BadArgument("can't bet less than 1 dubloon")

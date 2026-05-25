@@ -293,8 +293,16 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         ----------
         search_args : list, optional
             keyword value pairs in the format key:value or plain search terms.
-            recognized keys: page, artist, type, palette, size and order.
+            recognized keys: palette, artist, type, page, size and order.
+            keys can be shortened
             use "-" to negate arguments, e.g. -type:flat to filter flat maps.
+            examples:
+            * type:staircased  # searches for all staircased maps
+            * -t:flat          # searches for all maps except flat ones
+            * pal:full         # searches for full colour maps
+            * size:2x3         # searches for all map arts that are 2 wide and 3 high
+            * size:=6          # searches for all map arts thar contain 6 individual maps
+            * a:aryezz         # searches for map arts built by aryezz
         """
 
         try:
