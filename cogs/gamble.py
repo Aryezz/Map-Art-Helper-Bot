@@ -90,7 +90,7 @@ class GambleCommands(commands.Cog, name="Gambling"):
         
         search_results = await search_entries(search_args)
 
-        if len(search_results) == 0:
+        if len(search_results.results) == 0:
             raise commands.BadArgument("can't bet on a search with no results")
 
         won = roll in search_results.results
