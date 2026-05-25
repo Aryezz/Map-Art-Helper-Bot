@@ -30,7 +30,7 @@ class Balance(Base):
     __tablename__ = "balance"
     discord_id = Column(Integer, primary_key=True)
     balance = Column(Integer, default=1000)
-    total_bets = Column(Integer)
+    total_bets = Column(Integer, default=0)
 
 
 class MapArtArtist(Base):
@@ -215,6 +215,23 @@ class Session:
             self.session.add(entry)
         
         entry.balance += amount
+        return entry
+
+    async def update_balance(self, user_id: int, won: bool, bet: int, bet_winnings: int) -> Balance:
+        query = select(Balance).where(Balance.discord_id.is_(user_id));
+        entry = (await self.session.execute(query)).scalars().first()
+
+        if entry is None:
+            entry = Balance()
+            entry.discord_id = user_id
+            self.session.add(entry)
+
+        if won:
+            entry.balance += bet_winnings - bet
+        else:
+            entry.balance -= bet
+        
+        entry.total_bets += bet
         return entry
 
     async def get_leaderboard(self, limit: int = 10) -> list[Balance]:

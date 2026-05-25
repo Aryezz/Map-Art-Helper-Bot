@@ -121,12 +121,11 @@ class GambleCommands(commands.Cog, name="Gambling"):
             bet_odds = odds(wins, losses)
 
             bet_winnings = winnings(bet_odds, bet)
-            
-            async with sqla_db.Session() as db:
-                balance = await db.add_balance(ctx.author.id, bet_winnings - bet)
         else:
-            async with sqla_db.Session() as db:
-                balance = await db.add_balance(ctx.author.id, -bet)
+            bet_winnings = 0
+
+        async with sqla_db.Session() as db:
+            balance = await db.update_balance(ctx.author.id, won, bet, bet_winnings)
 
         message = f"You {"won" if won else "lost"}, your new balance is {balance_str(balance)}!"
 
@@ -142,7 +141,7 @@ class GambleCommands(commands.Cog, name="Gambling"):
             if user is None:
                 return None
 
-            return f"**{ranks.get(rank, f'{rank}:')} {user.display_name}** - {entry.balance} dubloons, {entry.total_bets} total bets\n"
+            return f"**{ranks.get(rank, f'{rank}:')} {user.display_name}** - {balance_str(entry)}, {total_bets_str(entry)} bet in total\n"
 
         async with sqla_db.Session() as db:
             top_gamblers = await db.get_leaderboard()
