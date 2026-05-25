@@ -26,6 +26,8 @@ class CommandErrorHandler(commands.Cog):
                 await ctx.reply("Missing Argument: " + str(error.param))
             case commands.BadArgument():
                 await ctx.reply("Bad argument: " + str(error))
+            case ValueError():
+                await ctx.reply("ValueError: " + str(error))
             case commands.NSFWChannelRequired():
                 await ctx.reply("This command can only be used in NSFW channels")
             case commands.BadUnionArgument():
@@ -41,7 +43,10 @@ class CommandErrorHandler(commands.Cog):
             case _:
                 tb = "".join(traceback.format_exception(type(error), error, error.__traceback__))
                 message = f"An error occurred:\n```py\n{tb}\n```"
-                await ctx.send(message)
+                try:
+                    await ctx.send(message)
+                except:
+                    pass
                 logger.error(f"Ignoring error:\n{tb}")
 
 
