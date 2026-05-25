@@ -30,7 +30,7 @@ class Balance(Base):
     __tablename__ = "balance"
     discord_id = Column(Integer, primary_key=True)
     balance = Column(Integer, default=1000)
-    bankruptcies = Column(Integer, default=0)
+    total_bets = Column(Integer)
 
 
 class MapArtArtist(Base):
@@ -215,22 +215,6 @@ class Session:
             self.session.add(entry)
         
         entry.balance += amount
-        return entry
-
-    async def bankrupt(self, user_id: int) -> Balance:
-        query = select(Balance).where(Balance.discord_id.is_(user_id));
-        entry = (await self.session.execute(query)).scalars().first()
-
-        if entry is None:
-            entry = Balance()
-            entry.discord_id = user_id
-            self.session.add(entry)
-        
-        if entry.balance > 0:
-            raise ValueError("User can't go bankrupt, they are not broke")
-        
-        entry.balance = 1000
-        entry.bankruptcies += 1
         return entry
 
     async def get_leaderboard(self, limit: int = 10) -> list[Balance]:

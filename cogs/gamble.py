@@ -10,12 +10,24 @@ from cogs.search import SearchArgumentConverter, SearchArguments, search_entries
 import sqla_db
 
 
-def odds(wins: int, losses: int):
+def odds(wins: int, losses: int) -> float:
     return losses / wins * 0.95
 
 
-def winnings(odds: float, bet: int):
+def winnings(odds: float, bet: int) -> int:
     return math.floor(odds * bet)
+
+
+def dubloon_str(n: int) -> str:
+    return "dubloon" if n == 1 else "dubloons"
+
+
+def balance_str(balance: sqla_db.Balance) -> str:
+    return f"{balance.balance} {dubloon_str(balance.balance)}"
+
+
+def total_bets_str(balance: sqla_db.Balance) -> str:
+    return f"{balance.total_bets} {dubloon_str(balance.total_bets)}"
 
 
 class GambleCommands(commands.Cog, name="Gambling"):
@@ -44,13 +56,12 @@ class GambleCommands(commands.Cog, name="Gambling"):
             balance = await db.get_balance(user.id)
 
         if user.id == ctx.author.id:
-            await ctx.reply(f"Your balance is {balance.balance} dubloons and you have gone bankrupt {balance.bankruptcies} time{'s' if balance.bankruptcies != 1 else ''}")
+            await ctx.reply(f"Your balance is {balance_str(balance)} and you have bet a total of {total_bets_str(balance)}")
         else:
-            await ctx.reply(f"{user.name}'s balance is {balance.balance} dubloons and they have gone bankrupt {balance.bankruptcies} time{'s' if balance.bankruptcies != 1 else ''}")
+            await ctx.reply(f"{user.name}'s balance is {balance_str(balance)} and they have bet a total of {total_bets_str(balance)}")
 
     @commands.command()
-    async def odds(self, ctx: commands.Context, bet: int | None = 100, *, search_args: Annotated[
-        SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
+    async def odds(self, ctx: commands.Context, bet: int | None = 100, *, search_args: Annotated[SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
         """Check the odds of a search"""
 
         if bet is None:
@@ -66,14 +77,22 @@ class GambleCommands(commands.Cog, name="Gambling"):
 
         bet_odds = odds(wins, losses)
         await ctx.reply(
-            "Your chance of winning this bet are {} / {} = {:.2f}%\n".format(wins, losses, wins / losses * 100) +
-            "I will give you odds of {:.2f} : 1, so a bet of 100 dubloons will win you {} dubloons".format(bet_odds, winnings(bet_odds, bet))
+            "Your chance of winning this bet is {} / {} = {:.2f}%\n".format(wins, losses, wins / losses * 100) +
+            "I will give you odds of {:.2f} : 1, so a bet of {} will win you {} dubloons".format(bet_odds, f"{bet} {dubloon_str(bet)}", winnings(bet_odds, bet))
         )
     
+    @commands.command(aliases=["claim"])
+    @commands.cooldown(1, 24 * 60 * 60, commands.BucketType.user)
+    async def work(self, ctx: commands.Context):
+        """Claim 200 dubloons every day"""
+        async with sqla_db.Session() as db:
+            balance = await db.add_balance(ctx.author.id, 200)
+
+        await ctx.reply(f"Your new balance is {balance_str(balance)}!")
+
+    
     @commands.command(aliases=["bet", "gamba"])
-    @commands.cooldown(1, 10 * 60, commands.BucketType.user)
-    async def gamble(self, ctx: commands.Context, bet: int, *, search_args: Annotated[
-        SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
+    async def gamble(self, ctx: commands.Context, bet: int, *, search_args: Annotated[SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
         """Gamble some money on a random map in the archive"""
 
         if bet <= 0:
@@ -105,17 +124,11 @@ class GambleCommands(commands.Cog, name="Gambling"):
             
             async with sqla_db.Session() as db:
                 balance = await db.add_balance(ctx.author.id, bet_winnings - bet)
-
-            message = f"You won, your new balance is {balance.balance} dubloons!"
         else:
             async with sqla_db.Session() as db:
                 balance = await db.add_balance(ctx.author.id, -bet)
 
-                if balance.balance == 0:
-                    await db.bankrupt(ctx.author.id)
-                    message = f"You lost and have gone bankrupt, your balance has been reset"
-                else:
-                    message = f"You lost, your new balance is {balance.balance} dubloons!"
+        message = f"You {"won" if won else "lost"}, your new balance is {balance_str(balance)}!"
 
         await ctx.send(view=map_archive.get_detail_view(roll, message=message))
     
@@ -129,8 +142,7 @@ class GambleCommands(commands.Cog, name="Gambling"):
             if user is None:
                 return None
 
-            bankruptcy_string = "bankruptcy" if entry.bankruptcies == 1 else "bankruptcies"
-            return f"**{ranks.get(rank, f'{rank}:')} {user.name}** - {entry.balance} dubloons, {entry.bankruptcies} {bankruptcy_string}\n"
+            return f"**{ranks.get(rank, f'{rank}:')} {user.name}** - {entry.balance} dubloons, {entry.total_bets} total bets\n"
 
         async with sqla_db.Session() as db:
             top_gamblers = await db.get_leaderboard()
