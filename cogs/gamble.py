@@ -44,9 +44,9 @@ class GambleCommands(commands.Cog, name="Gamble"):
             balance = await db.get_balance(user.id)
 
         if user.id == ctx.author.id:
-            await ctx.reply(f"Your balance is {balance.balance} dubloons and you have gone bankrupt {balance.bankruptcies} times")
+            await ctx.reply(f"Your balance is {balance.balance} dubloons and you have gone bankrupt {balance.bankruptcies} time{'s' if balance.bankruptcies != 1 else ''}")
         else:
-            await ctx.reply(f"{user.name}'s balance is {balance.balance} dubloons and they have gone bankrupt {balance.bankruptcies} times")
+            await ctx.reply(f"{user.name}'s balance is {balance.balance} dubloons and they have gone bankrupt {balance.bankruptcies} time{'s' if balance.bankruptcies != 1 else ''}")
 
     @commands.command()
     async def odds(self, ctx: commands.Context, bet: int | None = 100, *, search_args: Annotated[
@@ -122,7 +122,9 @@ class GambleCommands(commands.Cog, name="Gamble"):
             user = self.bot.get_user(entry.discord_id)
             if user is None:
                 return None
-            return f"**{ranks.get(rank, f'{rank}:')} {user.name}** - {entry.balance} dubloons, {entry.bankruptcies} bankruptcies\n"
+
+            bankruptcy_string = "bankruptcy" if entry.bankruptcies == 1 else "bankruptcies"
+            return f"**{ranks.get(rank, f'{rank}:')} {user.name}** - {entry.balance} dubloons, {entry.bankruptcies} {bankruptcy_string}\n"
 
         async with sqla_db.Session() as db:
             top_gamblers = await db.get_leaderboard()
@@ -133,8 +135,6 @@ class GambleCommands(commands.Cog, name="Gamble"):
             message += rank_formatter(rank, gambler)
         
         await ctx.send(message)
-
-
 
 
 async def setup(client):
