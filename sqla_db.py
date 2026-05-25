@@ -194,7 +194,7 @@ class Session:
         return (await self.session.execute(query)).scalars().first()
 
     async def get_balance(self, user_id: int) -> Balance:
-        query = select(Balance).where(Balance.discord_id.is_(user_id));
+        query = select(Balance).where(Balance.discord_id.is_(user_id))
         entry = (await self.session.execute(query)).scalars().first()
 
         if entry is not None:
@@ -203,28 +203,17 @@ class Session:
         instance = Balance()
         instance.discord_id = user_id
         self.session.add(instance)
+        entry = (await self.session.execute(query)).scalars().first()
         return instance
 
     async def add_balance(self, user_id: int, amount: int) -> Balance:
-        query = select(Balance).where(Balance.discord_id.is_(user_id));
-        entry = (await self.session.execute(query)).scalars().first()
-
-        if entry is None:
-            entry = Balance()
-            entry.discord_id = user_id
-            self.session.add(entry)
+        entry = await self.get_balance(user_id)
         
         entry.balance += amount
         return entry
 
     async def update_balance(self, user_id: int, won: bool, bet: int, bet_winnings: int) -> Balance:
-        query = select(Balance).where(Balance.discord_id.is_(user_id));
-        entry = (await self.session.execute(query)).scalars().first()
-
-        if entry is None:
-            entry = Balance()
-            entry.discord_id = user_id
-            self.session.add(entry)
+        entry = await self.get_balance(user_id)
 
         if won:
             entry.balance += bet_winnings - bet
