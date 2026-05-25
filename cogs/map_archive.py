@@ -6,10 +6,10 @@ from typing import Optional, Callable, Annotated
 
 import discord
 from discord import DiscordException, ui
-from discord.ext.commands import has_role, is_owner
 from discord.ext import commands, tasks
 
 import ai
+from cogs.checks import is_staff_or_owner
 import config
 import sqla_db
 from ai import MapArtLLMOutput
@@ -19,10 +19,6 @@ from cogs.views import MapEntityEditorView
 from map_archive_entry import MapArtArchiveEntry
 
 logger = logging.getLogger("discord.map_archive")
-
-
-def is_staff_or_owner():
-    return commands.check_any(has_role("staff"), is_owner())
 
 
 def get_detail_view(entry: MapArtArchiveEntry):
