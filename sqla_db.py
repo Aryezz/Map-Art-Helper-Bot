@@ -234,7 +234,7 @@ class Session:
         return entry
 
     async def get_leaderboard(self, limit: int = 10) -> list[Balance]:
-        query = select(Balance).order_by(Balance.balance).limit(limit)
+        query = select(Balance).order_by(desc(Balance.balance)).limit(limit)
         entries = (await self.session.execute(query)).scalars().all()
 
         return list(entries)
