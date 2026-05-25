@@ -115,6 +115,7 @@ class GambleCommands(commands.Cog, name="Gamble"):
     
     @commands.command(aliases=[])
     async def leaderboard(self, ctx: commands.Context):
+        """Find out who is best at gambling"""
         ranks = {1: "🥇", 2: "🥈", 3: "🥉"}
 
         def rank_formatter(rank: int, entry: sqla_db.Balance) -> str | None:

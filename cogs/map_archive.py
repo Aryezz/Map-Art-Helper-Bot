@@ -319,6 +319,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     @checks.is_in_bot_channel()
     @commands.command()
     async def random(self, ctx: commands.Context):
+        """Shows you a random map art from the archive"""
         async with sqla_db.Session() as db:
             entry = await db.get_random_map()
 
