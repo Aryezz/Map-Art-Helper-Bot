@@ -18,7 +18,7 @@ def winnings(odds: float, bet: int):
     return math.floor(odds * bet)
 
 
-class GambleCommands(commands.Cog, name="Gamble"):
+class GambleCommands(commands.Cog, name="Gambling"):
     """Commands to lose all your money"""
     def __init__(self, bot: discord.Client):
         self.bot = bot
@@ -71,7 +71,7 @@ class GambleCommands(commands.Cog, name="Gamble"):
         )
     
     @commands.command(aliases=["bet", "gamba"])
-    @commands.cooldown(1, 30 * 60, commands.BucketType.user)
+    @commands.cooldown(1, 10 * 60, commands.BucketType.user)
     async def gamble(self, ctx: commands.Context, bet: int, *, search_args: Annotated[
         SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
         """Gamble some money on a random map in the archive"""
