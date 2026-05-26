@@ -100,8 +100,8 @@ class GambleCommands(commands.Cog, name="Gambling"):
 
         await ctx.reply(f"200 dubloons claimed, your new balance is {balance_str(balance)}!\nCheck back tomorrow to work again.")
 
-    
     @commands.command(aliases=["bet", "gamba"])
+    @commands.max_concurrency(1, per=commands.BucketType.user, wait=True)
     async def gamble(self, ctx: commands.Context, bet: int, *, search_args: Annotated[SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
         """Gamble some money on a random map in the archive
 
