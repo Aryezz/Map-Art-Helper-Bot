@@ -1,6 +1,6 @@
 import logging
 import datetime
-from typing import Iterable, Literal, Any
+from typing import Iterable, Literal
 
 import sqlalchemy.ext.asyncio
 from sqlalchemy import Column, Integer, String, ForeignKey, Table, select, Enum, desc, func, or_, DateTime, Boolean, \
@@ -93,7 +93,7 @@ async def create_schema():
 
 
 class Session:
-    engine = create_async_engine(f"sqlite+aiosqlite:///map_art.db")
+    engine = create_async_engine("sqlite+aiosqlite:///map_art.db")
     session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
     async def __aenter__(self):
@@ -188,10 +188,21 @@ class Session:
         query = select(MapArtArchiveDBEntry).order_by(func.random()).limit(1)
         entry = (await self.session.execute(query)).scalars().first()
         return entry.as_entry() if entry is not None else None
+    
+    async def roll_gamble(self, search_query: Select[tuple[MapArtArchiveDBEntry]]) -> tuple[int, int, bool, MapArtArchiveDBEntry]:
+        map_ids_subquery = search_query.with_only_columns(MapArtArchiveDBEntry.map_id).subquery()
+        total_map_count_query = select(func.count()).select_from(MapArtArchiveDBEntry).scalar_subquery()
+        search_map_count_query = select(func.count()).select_from(map_ids_subquery).scalar_subquery()
 
-    async def get_total_maps(self) -> MapArtArchiveEntry:
-        query = select(func.count()).select_from(MapArtArchiveDBEntry)
-        return (await self.session.execute(query)).scalars().first()
+        random_map = await self.get_random_map()
+
+        win_query = select(map_ids_subquery).where(map_ids_subquery.c.map_id == random_map.map_id).exists()
+
+        combined = select(total_map_count_query, search_map_count_query, win_query)
+
+        total_count, win_count, win = (await self.session.execute(combined)).one()
+
+        return (total_count, win_count, win, random_map)
 
     async def get_balance(self, user_id: int) -> Balance:
         query = select(Balance).where(Balance.discord_id.is_(user_id))
@@ -233,7 +244,7 @@ class Session:
 class MapArtQueryBuilder:
     def __init__(self, session):
         self.session: sqlalchemy.ext.asyncio.AsyncSession = session
-        self.query: Select[Any] = select(MapArtArchiveDBEntry)
+        self.query: Select[tuple[MapArtArchiveDBEntry]] = select(MapArtArchiveDBEntry)
 
     def order_by(self, field: Literal["size", "date"], reverse: bool = False):
         if field == "size":

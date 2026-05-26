@@ -289,7 +289,6 @@ class SearchArgumentConverter(MixedArgsConverter):
 class SearchResults:
     page: int
     non_page_args: list[str]
-    total_maps: int = 0
     results: list[MapArtArchiveEntry] = field(default_factory=list)
 
     def max_page(self, page_size: int = 10):
@@ -299,32 +298,35 @@ class SearchResults:
         return 0 < self.page <= self.max_page(page_size)
 
 
-async def search_entries(query: SearchArguments) -> SearchResults:
-    results = SearchResults(query.page, query.non_page_args)
+def build_query(query: SearchArguments, query_builder: sqla_db.MapArtQueryBuilder):
+    query_builder.add_type_filter(include=query.included_types, exclude=query.excluded_types)
+    query_builder.add_palette_filter(include=query.included_palettes, exclude=query.excluded_palettes)
+
+    if query.filter_duplicates:
+        query_builder.add_duplicate_filter()
+    if query.filter_no_img:
+        query_builder.add_no_img_filter()
+
+    query_builder.add_artist_filter(include=query.included_artists, exclude=query.excluded_artists)
+    query_builder.add_search_filter(include=query.included_keywords, exclude=query.excluded_keywords)
+
+    query_builder.order_by(query.order_by, reverse=query.reverse_order)
+
+    query_builder.add_size_filter(min_size=query.min_size, max_size=query.max_size, exact_size=query.exact_size)
+
+
+async def search_entries(search_query: SearchArguments) -> SearchResults:
+    results = SearchResults(search_query.page, search_query.non_page_args)
 
     async with sqla_db.Session() as db:
         query_builder = db.get_query_builder()
 
-        query_builder.add_type_filter(include=query.included_types, exclude=query.excluded_types)
-        query_builder.add_palette_filter(include=query.included_palettes, exclude=query.excluded_palettes)
-
-        if query.filter_duplicates:
-            query_builder.add_duplicate_filter()
-        if query.filter_no_img:
-            query_builder.add_no_img_filter()
-
-        query_builder.add_artist_filter(include=query.included_artists, exclude=query.excluded_artists)
-        query_builder.add_search_filter(include=query.included_keywords, exclude=query.excluded_keywords)
-
-        query_builder.order_by(query.order_by, reverse=query.reverse_order)
-
-        query_builder.add_size_filter(min_size=query.min_size, max_size=query.max_size, exact_size=query.exact_size)
+        build_query(search_query, query_builder)
 
         results.results = await query_builder.execute()
-        results.total_maps = await db.get_total_maps()
 
     if len(results.results) == 0:
-        raise ValueError(f"No results")
+        raise ValueError("No results")
 
     if len(results.results) >= 2 and not results.page_valid():
         raise ValueError(f"Invalid Page, select a page between 1 and {results.max_page()}")

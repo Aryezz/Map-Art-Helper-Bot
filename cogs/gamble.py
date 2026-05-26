@@ -6,7 +6,7 @@ from discord.ext import commands
 
 from cogs import map_archive
 import cogs.checks
-from cogs.search import SearchArgumentConverter, SearchArguments, search_entries
+from cogs.search import SearchArgumentConverter, SearchArguments, build_query
 import sqla_db
 
 
@@ -76,18 +76,21 @@ class GambleCommands(commands.Cog, name="Gambling"):
 
         if bet is None:
             bet = 100
-        
-        search_results = await search_entries(search_args)
 
-        wins = len(search_results.results)
-        losses = search_results.total_maps
+        async with sqla_db.Session() as db:
+            query_builder = db.get_query_builder()
 
-        if wins == 0:
+            build_query(search_args, query_builder)
+
+            total_count, win_count, _, _ = await db.roll_gamble(query_builder.query)
+            loss_count = total_count - win_count
+
+        if win_count == 0:
             raise commands.BadArgument("can't bet on a search with no results")
 
-        bet_odds = odds(wins, losses)
+        bet_odds = odds(win_count, total_count - win_count)
         await ctx.reply(
-            "Your chance of winning this bet is {} / {} = {:.2f}%\n".format(wins, losses, wins / losses * 100) +
+            "Your chance of winning this bet is {} / {} = {:.2f}%\n".format(win_count, loss_count, win_count / loss_count * 100) +
             "I will give you odds of {:.2f} : 1, so a bet of {} will win you {} dubloons".format(bet_odds, f"{bet} {dubloon_str(bet)}", winnings(bet_odds, bet))
         )
     
@@ -123,22 +126,21 @@ class GambleCommands(commands.Cog, name="Gambling"):
 
         if bet > balance.balance:
             raise commands.BadArgument("can't bet more than balance")
-
-        async with sqla_db.Session() as db:
-            roll = await db.get_random_map()
         
-        search_results = await search_entries(search_args)
+        async with sqla_db.Session() as db:
+            query_builder = db.get_query_builder()
 
-        if len(search_results.results) == 0:
+            build_query(search_args, query_builder)
+
+            total_count, win_count, won, roll = await db.roll_gamble(query_builder.query)
+
+        if win_count == 0:
             raise commands.BadArgument("can't bet on a search with no results")
 
-        won = roll in search_results.results
-
         if won:
-            wins = len(search_results.results)
-            losses = search_results.total_maps
+            loss_count = total_count - win_count
 
-            bet_odds = odds(wins, losses)
+            bet_odds = odds(win_count, loss_count)
 
             bet_winnings = winnings(bet_odds, bet)
         else:
@@ -167,7 +169,7 @@ class GambleCommands(commands.Cog, name="Gambling"):
         async with sqla_db.Session() as db:
             top_gamblers = await db.get_leaderboard()
 
-        message = f"# Top Gamblers:\n"
+        message = "# Top Gamblers:\n"
 
         for rank, gambler in enumerate(top_gamblers, start=1):
             message += rank_formatter(rank, gambler)
