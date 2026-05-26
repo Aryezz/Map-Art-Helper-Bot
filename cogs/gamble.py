@@ -10,8 +10,8 @@ from cogs.search import SearchArgumentConverter, SearchArguments, build_query
 import sqla_db
 
 
-def odds(wins: int, losses: int) -> float:
-    return losses / wins * 0.95
+def odds(wins: int, total: int) -> float:
+    return total / wins * 0.95
 
 
 def winnings(odds: float, bet: int) -> int:
@@ -83,14 +83,13 @@ class GambleCommands(commands.Cog, name="Gambling"):
             build_query(search_args, query_builder)
 
             total_count, win_count, _, _ = await db.roll_gamble(query_builder.query)
-            loss_count = total_count - win_count
 
         if win_count == 0:
             raise commands.BadArgument("can't bet on a search with no results")
 
-        bet_odds = odds(win_count, total_count - win_count)
+        bet_odds = odds(win_count, total_count)
         await ctx.reply(
-            "Your chance of winning this bet is {} / {} = {:.2f}%\n".format(win_count, loss_count, win_count / loss_count * 100) +
+            "Your chance of winning this bet is {} / {} = {:.2f}%\n".format(win_count, total_count, win_count / total_count * 100) +
             "I will give you odds of {:.2f} : 1, so a bet of {} will win you {} dubloons".format(bet_odds, f"{bet} {dubloon_str(bet)}", winnings(bet_odds, bet))
         )
     
@@ -138,9 +137,7 @@ class GambleCommands(commands.Cog, name="Gambling"):
             raise commands.BadArgument("can't bet on a search with no results")
 
         if won:
-            loss_count = total_count - win_count
-
-            bet_odds = odds(win_count, loss_count)
+            bet_odds = odds(win_count, total_count)
 
             bet_winnings = winnings(bet_odds, bet)
         else:
