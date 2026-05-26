@@ -155,11 +155,11 @@ class GambleCommands(commands.Cog, name="Gambling"):
         """Find out who is best at gambling"""
         ranks = {1: "🥇", 2: "🥈", 3: "🥉"}
 
-        def rank_formatter(rank: int, entry: sqla_db.Balance) -> str | None:
+        def rank_formatter(rank: int, entry: sqla_db.Balance) -> str:
             user = self.bot.get_user(entry.discord_id)
             if user is None:
-                return None
-            user_name = discord.utils.escape_markdown(discord.utils.escape_mentions(user.display_name))
+                return ""
+            user_name = "\u202A" + discord.utils.escape_markdown(discord.utils.escape_mentions(user.display_name)) + "\u202C"
 
             return f"**{ranks.get(rank, f'{rank}:')} {user_name}** - {balance_str(entry)}, {total_bets_str(entry)} bet in total\n"
 
