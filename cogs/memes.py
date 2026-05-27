@@ -51,7 +51,7 @@ class MemeCommands(commands.Cog, name="Memes"):
 
     @commands.command(hidden=True)
     async def updog(self, ctx):
-        await ctx.send(f"not much, how about you?")
+        await ctx.send("not much, how about you?")
 
     @commands.command(hidden=True)
     async def yqe(self, ctx):
