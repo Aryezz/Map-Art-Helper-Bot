@@ -281,28 +281,22 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
         await ctx.reply("renamed")
 
     @checks.is_in_bot_channel()
-    @commands.command(rest_is_raw=True, aliases=["s"])
+    @commands.command(rest_is_raw=True, aliases=["s"], description="Search map arts in the archive", help="""
+            search_args takes keyword value pairs in the format key:value or plain search terms.
+            recognized keys: palette, artist, type, page, size and order.
+            keys can be shortened (see examples)
+            use "-" to negate arguments
+            
+            examples:
+            * miku             # search for all maps containing "miku" in the name or notes, or having "miku" as an artist, palette or type 
+            * type:staircased  # search for all staircased maps
+            * -t:flat          # search for all maps except flat ones
+            * pal:full         # search for full colour maps
+            * size:2x3         # search for all map arts that are 2 wide and 3 high
+            * size:=6          # search for all map arts thar contain exactly 6 individual maps (you can also use > >= < <=)
+            * a:aryezz         # search for map arts built by aryezz""")
     async def search(self, ctx: commands.Context, *, search_args: Annotated[
         SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
-        """Search map arts in the archive
-
-        Usage: !!search [search_args]
-
-        Parameters
-        ----------
-        search_args : list, optional
-            keyword value pairs in the format key:value or plain search terms.
-            recognized keys: palette, artist, type, page, size and order.
-            keys can be shortened
-            use "-" to negate arguments, e.g. -type:flat to filter flat maps.
-            examples:
-            * type:staircased  # searches for all staircased maps
-            * -t:flat          # searches for all maps except flat ones
-            * pal:full         # searches for full colour maps
-            * size:2x3         # searches for all map arts that are 2 wide and 3 high
-            * size:=6          # searches for all map arts thar contain 6 individual maps
-            * a:aryezz         # searches for map arts built by aryezz
-        """
 
         try:
             search_results = await search_entries(search_args)

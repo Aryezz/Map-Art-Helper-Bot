@@ -14,7 +14,7 @@ bot = commands.Bot(
     intents=intents,
     command_prefix=config.prefix,
     case_insensitive=True,
-    help_command=DefaultHelpCommand(width=250)
+    help_command=DefaultHelpCommand(width=2000)
 )
 
 logger = logging.getLogger("discord.mapart.init")

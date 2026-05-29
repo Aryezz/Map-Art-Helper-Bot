@@ -302,7 +302,7 @@ class MapArtQueryBuilder:
                     MapArtArchiveDBEntry.palette.ilike(search_term),
                     MapArtArchiveDBEntry.type.ilike(search_term),
                     MapArtArchiveDBEntry.message_id == search_term,
-                    MapArtArchiveDBEntry.notes.ilike(search_term),
+                    MapArtArchiveDBEntry.notes.contains(search_term),
                 )))
 
         if exclude is not None and len(exclude) >= 1:
@@ -315,7 +315,7 @@ class MapArtQueryBuilder:
                     MapArtArchiveDBEntry.palette.ilike(search_term),
                     MapArtArchiveDBEntry.type.ilike(search_term),
                     MapArtArchiveDBEntry.message_id == search_term,
-                    MapArtArchiveDBEntry.notes.ilike(search_term),
+                    MapArtArchiveDBEntry.notes.contains(search_term),
                 ))))
 
     async def execute(self):
