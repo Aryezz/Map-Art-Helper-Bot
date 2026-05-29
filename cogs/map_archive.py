@@ -9,7 +9,6 @@ from discord import DiscordException, ui
 from discord.ext import commands, tasks
 
 import ai
-from cogs.checks import is_staff_or_owner
 import config
 import sqla_db
 from ai import MapArtLLMOutput
@@ -162,7 +161,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     async def get_entry_message_content(self, entry: MapArtArchiveEntry) -> str:
         return (await self.archive_channel.fetch_message(entry.message_id)).clean_content
 
-    @is_staff_or_owner()
+    @checks.is_staff_or_owner()
     @commands.command(aliases=["e", "ea", "editall"], hidden=True, rest_is_raw=True)
     async def edit(self, ctx: commands.Context, *, search_args: Annotated[
         SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
@@ -200,13 +199,13 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
                 await ctx.send(view=editor_view)
                 await editor_view.wait()
 
-    @is_staff_or_owner()
+    @checks.is_staff_or_owner()
     @commands.command(hidden=True)
     async def cancel(self, ctx: commands.Context):
         self.cancel_queue.add(ctx.author.id)
         await ctx.reply("multi-edit cancelled", ephemeral=True)
 
-    @is_staff_or_owner()
+    @checks.is_staff_or_owner()
     @commands.command(hidden=True)
     async def import_map(self, ctx, message: discord.Message):
         msg = await self.archive_channel.fetch_message(message.id)
@@ -228,7 +227,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             for entry in final_entries:
                 await self.bot_log_channel.send(view=get_detail_view(entry))
 
-    @is_staff_or_owner()
+    @checks.is_staff_or_owner()
     @commands.command(hidden=True)
     async def reimport_map(self, ctx, message: discord.Message):
         msg = await self.archive_channel.fetch_message(message.id)
@@ -264,7 +263,7 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             for entry in final_entries:
                 await self.bot_log_channel.send(view=get_detail_view(entry))
 
-    @is_staff_or_owner()
+    @checks.is_staff_or_owner()
     @commands.command(hidden=True)
     async def rename_artist(self, ctx: commands.Context, old_name: str, new_name: str):
         async with sqla_db.Session() as db:

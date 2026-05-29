@@ -4,8 +4,7 @@ from typing import Annotated
 import discord
 from discord.ext import commands
 
-from cogs import map_archive
-import cogs.checks
+from cogs import map_archive, checks
 from cogs.search import SearchArgumentConverter, SearchArguments, build_query
 import sqla_db
 
@@ -34,8 +33,9 @@ class GambleCommands(commands.Cog, name="Gambling"):
     """Commands to lose all your money"""
     def __init__(self, bot: discord.Client):
         self.bot = bot
-    
-    @cogs.checks.is_staff_or_owner()
+
+    @checks.is_in_bot_channel()
+    @checks.is_staff_or_owner()
     @commands.command(hidden=True)
     async def add_balance(self, ctx: commands.Context, user: discord.User, amount: int):
         """Add to balance"""
@@ -44,7 +44,8 @@ class GambleCommands(commands.Cog, name="Gambling"):
             balance = await db.add_balance(user.id, amount)
 
         await ctx.reply(f"{user.name}'s balance is now {balance.balance} dubloons")
-    
+
+    @checks.is_in_bot_channel()
     @commands.command(aliases=["bal"])
     async def balance(self, ctx: commands.Context, user: discord.User | None = None):
         """Check a balance"""
@@ -60,6 +61,7 @@ class GambleCommands(commands.Cog, name="Gambling"):
         else:
             await ctx.reply(f"{user.name}'s balance is {balance_str(balance)} and they have bet a total of {total_bets_str(balance)}")
 
+    @checks.is_in_bot_channel()
     @commands.command()
     async def odds(self, ctx: commands.Context, bet: int | None = 100, *, search_args: Annotated[SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
         """Check the odds of a search
@@ -92,7 +94,8 @@ class GambleCommands(commands.Cog, name="Gambling"):
             "Your chance of winning this bet is {} / {} = {:.2f}%\n".format(win_count, total_count, win_count / total_count * 100) +
             "I will give you odds of {:.2f} : 1, so a bet of {} will win you {} dubloons".format(bet_odds, f"{bet} {dubloon_str(bet)}", winnings(bet_odds, bet))
         )
-    
+
+    @checks.is_in_bot_channel()
     @commands.command(aliases=["claim"])
     @commands.cooldown(1, 24 * 60 * 60, commands.BucketType.user)
     async def work(self, ctx: commands.Context):
@@ -102,6 +105,7 @@ class GambleCommands(commands.Cog, name="Gambling"):
 
         await ctx.reply(f"200 dubloons claimed, your new balance is {balance_str(balance)}!\nCheck back tomorrow to work again.")
 
+    @checks.is_in_bot_channel()
     @commands.command(aliases=["bet", "gamba"])
     @commands.max_concurrency(1, per=commands.BucketType.user, wait=True)
     async def gamble(self, ctx: commands.Context, bet: int, *, search_args: Annotated[SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
@@ -149,7 +153,8 @@ class GambleCommands(commands.Cog, name="Gambling"):
         message = f"You {"won" if won else "lost"}, your new balance is {balance_str(balance)}!"
 
         await ctx.send(view=map_archive.get_detail_view(roll, message=message))
-    
+
+    @checks.is_in_bot_channel()
     @commands.command(aliases=["lb"])
     async def leaderboard(self, ctx: commands.Context):
         """Find out who is best at gambling"""
