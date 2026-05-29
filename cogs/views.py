@@ -7,7 +7,6 @@ import discord
 from discord import ui
 from discord.ext.commands import Bot
 
-import config
 import sqla_db
 from cogs.base_view import BaseView
 from map_archive_entry import MapArtArchiveEntry, MapArtType, MapArtPalette
@@ -220,7 +219,7 @@ class MapEntityEditorView(BaseView):
         container = ui.Container()
         header = ui.Section(
             ui.TextDisplay(
-                f"# Map Entry Settings <:mcmap:349454913526562816>\n" +
+                "# Map Entry Settings <:mcmap:349454913526562816>\n" +
                 f"[Jump to message]({self.entry.link})\n" +
                 "### Message text\n" +
                 ("> " + self.message_content.replace("\n", "\n> ") if self.message_content else "")
@@ -234,11 +233,11 @@ class MapEntityEditorView(BaseView):
         container.add_item(
             ui.Section(
                 ui.TextDisplay(
-                    f"## General Attributes\n" +
+                    "## General Attributes\n" +
                     f"### Name\n{discord.utils.escape_markdown(self.entry.name)}\n" +
                     f"### Size\n{self.entry.width} x {self.entry.height}\n" +
-                    f"### Artists\n" + "\n".join(f"* {discord.utils.escape_markdown(artist)}" for artist in self.entry.artists) + "\n" +
-                    f"### Notes\n" +
+                    "### Artists\n" + "\n".join(f"* {discord.utils.escape_markdown(artist)}" for artist in self.entry.artists) + "\n" +
+                    "### Notes\n" +
                     ("\n".join("> " + line for line in self.entry.notes.split("\n")) if self.entry.notes else "-")
                 ),
                 accessory=MapTextEditButton(self.entry)
@@ -279,14 +278,14 @@ class MapEntityEditorView(BaseView):
         async with sqla_db.Session() as db:
             await db.add_maps([self.entry])
 
-        await interaction.followup.send(f'Map art saved', ephemeral=True)
+        await interaction.followup.send('Map art saved', ephemeral=True)
         self.stop()
         await interaction.delete_original_response()
 
     @row.button(label='Cancel', style=discord.ButtonStyle.grey)
     async def cancel_button(self, interaction: discord.Interaction[Bot], button: ui.Button) -> None:
         await interaction.response.edit_message(view=self)
-        await interaction.followup.send(f'Edit cancelled', ephemeral=True)
+        await interaction.followup.send('Edit cancelled', ephemeral=True)
         self.stop()
         await interaction.delete_original_response()
 

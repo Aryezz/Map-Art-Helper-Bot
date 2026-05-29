@@ -1,6 +1,5 @@
 import math
 import re
-from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -229,18 +228,24 @@ class SearchArgumentConverter(MixedArgsConverter):
                     if map_palette is None:
                         raise ValueError("couldn't parse palette value")
 
-                    if arg.exclude:  search_arguments.excluded_palettes.append(map_palette)
-                    else:            search_arguments.included_palettes.append(map_palette)
+                    if arg.exclude:
+                        search_arguments.excluded_palettes.append(map_palette)
+                    else:
+                        search_arguments.included_palettes.append(map_palette)
                 elif "artist".startswith(arg.key):
-                    if arg.exclude:  search_arguments.excluded_artists.append(arg.value)
-                    else:            search_arguments.included_artists.append(arg.value)
+                    if arg.exclude:
+                        search_arguments.excluded_artists.append(arg.value)
+                    else:
+                        search_arguments.included_artists.append(arg.value)
                 elif "type".startswith(arg.key):
                     map_type = get_map_type(arg.value)
                     if map_type is None:
                         raise ValueError("couldn't parse type value")
 
-                    if arg.exclude:  search_arguments.excluded_types.append(map_type)
-                    else:            search_arguments.included_types.append(map_type)
+                    if arg.exclude:
+                        search_arguments.excluded_types.append(map_type)
+                    else:
+                        search_arguments.included_types.append(map_type)
                 elif "page".startswith(arg.key):
                     if arg.exclude:
                         raise ValueError("cannot use exclusion for argument `page`")

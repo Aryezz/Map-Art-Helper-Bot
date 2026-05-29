@@ -36,7 +36,7 @@ def get_detail_view(entry: MapArtArchiveEntry, message: str | None = None):
     view.add_item(
         ui.TextDisplay(discord.utils.escape_mentions(
             f"### Size\n{entry.width} x {entry.height} ({entry.total_maps} {"map" if entry.total_maps == 1 else "maps"})\n" +
-            f"### Artists\n" + "\n".join(f"* {discord.utils.escape_markdown(artist)}" for artist in entry.artists) + "\n" +
+            "### Artists\n" + "\n".join(f"* {discord.utils.escape_markdown(artist)}" for artist in entry.artists) + "\n" +
             f"### Type\n{entry.map_type.value}\n"
             f"### Palette\n{entry.palette.value}\n"
             f"### Notes\n" +

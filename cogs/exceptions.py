@@ -48,7 +48,7 @@ class CommandErrorHandler(commands.Cog):
                 message = f"An error occurred:\n```py\n{tb}\n```"
                 try:
                     await ctx.send(message)
-                except:
+                except Exception:
                     pass
                 logger.error(f"Ignoring error:\n{tb}")
 
