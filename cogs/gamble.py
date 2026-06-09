@@ -34,7 +34,6 @@ class GambleCommands(commands.Cog, name="Gambling"):
     def __init__(self, bot: discord.Client):
         self.bot = bot
 
-    @checks.is_in_bot_channel()
     @checks.is_staff_or_owner()
     @commands.command(hidden=True)
     async def add_balance(self, ctx: commands.Context, user: discord.User, amount: int):
@@ -42,6 +41,16 @@ class GambleCommands(commands.Cog, name="Gambling"):
         
         async with sqla_db.Session() as db:
             balance = await db.add_balance(user.id, amount)
+
+        await ctx.reply(f"{user.name}'s balance is now {balance.balance} dubloons")
+
+    @checks.is_staff_or_owner()
+    @commands.command(hidden=True)
+    async def reset_balance(self, ctx: commands.Context, user: discord.User | None = None):
+        """Reset a user"""
+
+        async with sqla_db.Session() as db:
+            balance = await db.reset_gambler(user.id)
 
         await ctx.reply(f"{user.name}'s balance is now {balance.balance} dubloons")
 
@@ -179,11 +188,16 @@ class GambleCommands(commands.Cog, name="Gambling"):
             return f"**{ranks.get(rank, f'{rank}:')} {user_name}** - {balance_str(entry)}, {total_bets_str(entry)} bet in total\n"
 
         async with sqla_db.Session() as db:
-            top_gamblers = await db.get_leaderboard()
+            top_bals, top_bets = await db.get_leaderboard(limit=5)
 
-        message = "# Top Gamblers:\n"
+        message = "# Richest Gamblers:\n"
 
-        for rank, gambler in enumerate(top_gamblers, start=1):
+        for rank, gambler in enumerate(top_bals, start=1):
+            message += rank_formatter(rank, gambler)
+
+        message += "# Most Addicted Gamblers:\n"
+
+        for rank, gambler in enumerate(top_bets, start=1):
             message += rank_formatter(rank, gambler)
         
         await ctx.send(message)

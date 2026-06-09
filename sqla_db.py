@@ -215,12 +215,19 @@ class Session:
         instance.discord_id = user_id
         self.session.add(instance)
         entry = (await self.session.execute(query)).scalars().first()
-        return instance
+        return entry
 
     async def add_balance(self, user_id: int, amount: int) -> Balance:
         entry = await self.get_balance(user_id)
         
         entry.balance += amount
+        return entry
+
+    async def reset_gambler(self, user_id: int) -> Balance:
+        entry = await self.get_balance(user_id)
+
+        entry.balance = 0
+        entry.total_bets = 0
         return entry
 
     async def update_balance(self, user_id: int, won: bool, bet: int, bet_winnings: int) -> Balance:
@@ -234,11 +241,13 @@ class Session:
         entry.total_bets += bet
         return entry
 
-    async def get_leaderboard(self, limit: int = 10) -> list[Balance]:
-        query = select(Balance).order_by(desc(Balance.balance)).limit(limit)
-        entries = (await self.session.execute(query)).scalars().all()
+    async def get_leaderboard(self, limit: int = 10) -> tuple[list[Balance], list[Balance]]:
+        top_bals_query = select(Balance).order_by(desc(Balance.balance)).limit(limit)
+        top_bals = list((await self.session.execute(top_bals_query)).scalars().all())
+        top_bets_query = select(Balance).order_by(desc(Balance.total_bets)).limit(limit)
+        top_bets = list((await self.session.execute(top_bets_query)).scalars().all())
 
-        return list(entries)
+        return top_bals, top_bets
 
 
 class MapArtQueryBuilder:
