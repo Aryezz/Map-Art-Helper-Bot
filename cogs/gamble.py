@@ -99,11 +99,21 @@ class GambleCommands(commands.Cog, name="Gambling"):
     @commands.command(aliases=["claim"])
     @commands.cooldown(1, 24 * 60 * 60, commands.BucketType.user)
     async def work(self, ctx: commands.Context):
-        """Claim 200 dubloons every day"""
-        async with sqla_db.Session() as db:
-            balance = await db.add_balance(ctx.author.id, 200)
+        """Claim 200 dubloons every day (+ 50 extra if you boost this server)"""
+        is_booster = any(role.is_premium_subscriber() for role in ctx.author.roles)
+        reward = 250 if is_booster else 200
 
-        await ctx.reply(f"200 dubloons claimed, your new balance is {balance_str(balance)}!\nCheck back tomorrow to work again.")
+        async with sqla_db.Session() as db:
+            balance = await db.add_balance(ctx.author.id, reward)
+
+        claim_msg = f"{reward} dubloons claimed"
+
+        if is_booster:
+            claim_msg += " (50 bonus for boosting this guild)"
+
+        claim_msg += f", your new balance is {balance_str(balance)}!\nCheck back tomorrow to work again."
+
+        await ctx.reply(claim_msg)
 
     @checks.is_in_bot_channel()
     @commands.command(aliases=["bet", "gamba"])
