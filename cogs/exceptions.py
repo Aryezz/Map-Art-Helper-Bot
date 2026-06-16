@@ -1,8 +1,9 @@
+from datetime import datetime, timedelta
 import logging
 import traceback
 
+import discord.utils
 from discord.ext import commands
-import humanize
 
 from cogs import checks
 from cogs.memes import MemeCommands
@@ -42,7 +43,8 @@ class CommandErrorHandler(commands.Cog):
             case commands.ConversionError():
                 await ctx.reply(f"Failed to parse the provided arguments: {str(error.original)}")
             case commands.CommandOnCooldown():
-                await ctx.reply("This command is on cooldown, try again in " + humanize.naturaldelta(error.retry_after))
+                cooldown_end = datetime.now() + timedelta(seconds=error.retry_after)
+                await ctx.reply("This command is on cooldown, try again " + discord.utils.format_dt(cooldown_end, style="R"))
             case _:
                 tb = "".join(traceback.format_exception(type(error), error, error.__traceback__))
                 message = f"An error occurred:\n```py\n{tb}\n```"
