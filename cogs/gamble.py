@@ -17,16 +17,16 @@ def winnings(odds: float, bet: int) -> int:
     return math.floor(odds * bet)
 
 
-def dubloon_str(n: int) -> str:
-    return "dubloon" if n == 1 else "dubloons"
+def doubloon_str(n: int) -> str:
+    return "doubloon" if n == 1 else "doubloons"
 
 
 def balance_str(balance: sqla_db.Balance) -> str:
-    return f"{balance.balance} {dubloon_str(balance.balance)}"
+    return f"{balance.balance} {doubloon_str(balance.balance)}"
 
 
 def total_bets_str(balance: sqla_db.Balance) -> str:
-    return f"{balance.total_bets} {dubloon_str(balance.total_bets)}"
+    return f"{balance.total_bets} {doubloon_str(balance.total_bets)}"
 
 
 class GambleCommands(commands.Cog, name="Gambling"):
@@ -42,7 +42,7 @@ class GambleCommands(commands.Cog, name="Gambling"):
         async with sqla_db.Session() as db:
             balance = await db.add_balance(user.id, amount)
 
-        await ctx.reply(f"{user.name}'s balance is now {balance.balance} dubloons")
+        await ctx.reply(f"{user.name}'s balance is now {balance.balance} doubloons")
 
     @checks.is_staff_or_owner()
     @commands.command(hidden=True)
@@ -52,7 +52,7 @@ class GambleCommands(commands.Cog, name="Gambling"):
         async with sqla_db.Session() as db:
             balance = await db.reset_gambler(user.id)
 
-        await ctx.reply(f"{user.name}'s balance is now {balance.balance} dubloons")
+        await ctx.reply(f"{user.name}'s balance is now {balance.balance} doubloons")
 
     @checks.is_in_bot_channel()
     @commands.command(aliases=["bal"])
@@ -80,7 +80,7 @@ class GambleCommands(commands.Cog, name="Gambling"):
         Parameters
         ----------
         bet : int, optional
-            amount of dubloons to bet
+            amount of doubloons to bet
         search_args : list, optional
             same search format as !!search
         """
@@ -101,21 +101,21 @@ class GambleCommands(commands.Cog, name="Gambling"):
         bet_odds = odds(win_count, total_count)
         await ctx.reply(
             "Your chance of winning this bet is {} / {} = {:.2f}%\n".format(win_count, total_count, win_count / total_count * 100) +
-            "I will give you odds of {:.2f} : 1, so a bet of {} will win you {} dubloons".format(bet_odds, f"{bet} {dubloon_str(bet)}", winnings(bet_odds, bet))
+            "I will give you odds of {:.2f} : 1, so a bet of {} will win you {} doubloons".format(bet_odds, f"{bet} {doubloon_str(bet)}", winnings(bet_odds, bet))
         )
 
     @checks.is_in_bot_channel()
     @commands.command(aliases=["claim"])
     @commands.cooldown(1, 24 * 60 * 60, commands.BucketType.user)
     async def work(self, ctx: commands.Context):
-        """Claim 200 dubloons every day (+ 50 extra if you boost this server)"""
+        """Claim 200 doubloons every day (+ 50 extra if you boost this server)"""
         is_booster = any(role.is_premium_subscriber() for role in ctx.author.roles)
         reward = 250 if is_booster else 200
 
         async with sqla_db.Session() as db:
             balance = await db.add_balance(ctx.author.id, reward)
 
-        claim_msg = f"{reward} dubloons claimed"
+        claim_msg = f"{reward} doubloons claimed"
 
         if is_booster:
             claim_msg += " (50 bonus for boosting this guild)"
@@ -135,13 +135,13 @@ class GambleCommands(commands.Cog, name="Gambling"):
         Parameters
         ----------
         bet : int, optional
-            amount of dubloons to bet
+            amount of doubloons to bet
         search_args : list, optional
             same search format as !!search
         """
 
         if bet <= 0:
-            raise commands.BadArgument("can't bet less than 1 dubloon")
+            raise commands.BadArgument("can't bet less than 1 doubloon")
 
         async with sqla_db.Session() as db:
             balance = await db.get_balance(ctx.author.id)
