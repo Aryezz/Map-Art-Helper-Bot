@@ -243,7 +243,7 @@ class HelpCommands(commands.Cog, name="Help"):
         message = (
             "Water is not affected by the height of the block north of it (like other blocks are). "
             "Instead the different shades can be produced using different water depths: "
-            "https://media.discordapp.net/attachments/349480851915931653/1167752798818009088/2023-10-28_02.11.07.png"
+            "https://media.discordapp.net/attachments/349437863449985024/1483021734314774630/2026-03-16_03.38.15.png"
         )
 
         await ctx.send(message)
