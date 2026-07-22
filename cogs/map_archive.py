@@ -286,6 +286,21 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             recognized keys: palette, artist, type, page, size and order.
             keys can be shortened (see examples)
             use "-" to negate arguments
+            use quotes to use values containing whitespace
+            
+            valid map art types:
+            * flat
+            * dual-layered
+            * staircased
+            * semi-staircased
+            * unknown
+            
+            valid palettes:
+            * full colour
+            * two-colour
+            * carpet only
+            * greyscale
+            * unknown
             
             examples:
             * miku             # search for all maps containing "miku" in the name or notes, or having "miku" as an artist, palette or type 
@@ -294,7 +309,8 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
             * pal:full         # search for full colour maps
             * size:2x3         # search for all map arts that are 2 wide and 3 high
             * size:=6          # search for all map arts thar contain exactly 6 individual maps (you can also use > >= < <=)
-            * a:aryezz         # search for map arts built by aryezz""")
+            * a:aryezz         # search for map arts built by aryezz
+            * a:"some artist"  # search for map arts built by "some artist" (using quotes due to whitespace)""")
     async def search(self, ctx: commands.Context, *, search_args: Annotated[
         SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
 
