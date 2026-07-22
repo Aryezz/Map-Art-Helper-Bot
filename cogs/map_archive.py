@@ -36,7 +36,8 @@ def get_detail_view(entry: MapArtArchiveEntry, message: str | None = None):
     view.add_item(
         ui.TextDisplay(discord.utils.escape_mentions(
             f"### Size\n{entry.width} x {entry.height} ({entry.total_maps} {"map" if entry.total_maps == 1 else "maps"})\n" +
-            "### Artists\n" + "\n".join(f"* {discord.utils.escape_markdown(artist)}" for artist in entry.artists) + "\n" +
+            "### Artists\n" + "\n".join(
+                f"* {discord.utils.escape_markdown(artist)}" for artist in entry.artists) + "\n" +
             f"### Type\n{entry.map_type.value}\n"
             f"### Palette\n{entry.palette.value}\n"
             f"### Notes\n" +
@@ -88,8 +89,10 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
     def cog_unload(self):
         self.update_archive.cancel()
 
-    async def fix_attributes(self, entry: MapArtLLMOutput) -> Optional[MapArtArchiveEntry]:
-        message = await self.archive_channel.fetch_message(entry.message_id)
+    async def fix_attributes(self, entry: MapArtLLMOutput, message: discord.Message = None) -> Optional[
+        MapArtArchiveEntry]:
+        if message is None:
+            message = await self.archive_channel.fetch_message(entry.message_id)
 
         fixed_artists = []
         for artist in entry.artists:
@@ -229,36 +232,45 @@ class MapArchiveCommands(commands.Cog, name="Map Archive"):
 
     @checks.is_staff_or_owner()
     @commands.command(hidden=True)
-    async def reimport_map(self, ctx, message: discord.Message):
-        msg = await self.archive_channel.fetch_message(message.id)
+    async def reimport_map(self, ctx, *, search_args: Annotated[
+        SearchArguments, SearchArgumentConverter(default_min_size=0, default_order_by="date")]):
+        search_results = (await search_entries(search_args)).results
 
-        async with sqla_db.Session() as db:
-            query_builder = db.get_query_builder()
-            query_builder.add_search_filter([str(msg.id)])
-
-            previous_entries = await query_builder.execute()
-
-            if len(previous_entries) != 1:
-                logger.error("not exactly one entry returned, skipping")
-                await ctx.send("not exactly one entry returned, skipping")
-                return
-
-            previous_entry = previous_entries[0]
-
-        ai_processed: list[MapArtLLMOutput] = await ai.process_messages([msg])
-
-        try:
-            final_entries: list[MapArtArchiveEntry] = [await self.fix_attributes(entry) for entry in ai_processed]
-        except DiscordException:
-            logger.error("error in LLM returned data, skipping")
-            await ctx.send("error in LLM returned data, skipping")
+        if len(search_results) >= 100:
+            await ctx.reply("too many results for this search, limit is 100")
             return
 
+        if len(search_results) == 0:
+            await ctx.reply("no results for this search")
+            return
+
+        message_ids = {result.message_id for result in search_results}
+        if len(message_ids) != len(search_results):
+            logger.error("not exactly one entry per message, cancelling")
+            await ctx.send("not exactly one entry per message, cancelling")
+
+        messages = {}
+        await ctx.reply("fetching discord messages, this can take a while...", ephemeral=True)
+        for result in search_results:
+            messages[result.message_id] = await self.archive_channel.fetch_message(result.message_id)
+
+        ai_processed: list[MapArtLLMOutput] = await ai.process_messages(list(messages.values()))
+        ai_message_ids = {ai_entry.message_id for ai_entry in ai_processed}
+
+        if (ai_message_ids != message_ids) or (len(ai_processed) != len(search_results)):
+            logger.error("not exactly one entry per request generated, cancelling")
+            await ctx.send("not exactly one entry per request generated, cancelling")
+            return
+
+        final_entries: list[MapArtArchiveEntry] = [await self.fix_attributes(entry, messages[entry.message_id]) for
+                                                   entry in ai_processed]
+
         async with sqla_db.Session() as db:
-            await db.delete_maps([previous_entry])
+            await db.delete_maps(search_results)
             await db.add_maps(final_entries)
 
-            await ctx.send(f"deleted 1 entry, processed 1 message, added {len(final_entries)} maps")
+            await ctx.send(
+                f"deleted {len(search_results)} entry/entries, processed {len(search_results)} message(s), added {len(final_entries)} maps")
 
             for entry in final_entries:
                 await self.bot_log_channel.send(view=get_detail_view(entry))
