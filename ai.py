@@ -49,6 +49,7 @@ async def process_messages(messages: list[discord.Message]) -> list[MapArtLLMOut
         "The messages describe Minecraft map arts and contain some structured properties. "
         "If there are references to original artists, you can put these in the notes, but not as artists, just return the builders/printers/mappers as the artists. "
         "If no size is provided, you can assume 1x1. For all sizes you can assume width comes before height. "
+        "Maps that are \"colour suppressed\" can be considered staircased. "
         "The output should contain one entry for every message with one or more attachments. "
         "Messages without attachments cannot ever represent an output entry, except if there are image links in the message content, which do not get recognized as attachments. "
         "Messages without attachments or image links might add relevant information for following messages. "
