@@ -253,7 +253,7 @@ class Session:
 class MapArtQueryBuilder:
     def __init__(self, session):
         self.session: sqlalchemy.ext.asyncio.AsyncSession = session
-        self.query: Select[tuple[MapArtArchiveDBEntry]] = select(MapArtArchiveDBEntry)
+        self.query: Select[tuple[MapArtArchiveDBEntry]] = select(MapArtArchiveDBEntry).distinct()
 
     def order_by(self, field: Literal["size", "date"], reverse: bool = False):
         if field == "size":
@@ -328,5 +328,5 @@ class MapArtQueryBuilder:
                 ))))
 
     async def execute(self):
-        db_entries = (await self.session.execute(self.query)).scalars().unique().all()
+        db_entries = (await self.session.execute(self.query)).scalars().all()
         return [entry.as_entry() for entry in db_entries]
