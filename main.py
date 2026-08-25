@@ -28,7 +28,7 @@ async def on_ready():
     async for guild in bot.fetch_guilds():
         logger.info(f" * {guild.name}")
 
-    cogs = ["cogs.memes", "cogs.help", "cogs.links", "cogs.misc", "cogs.gamble", "cogs.map_archive", "cogs.exceptions"]
+    cogs = ["cogs.moderation", "cogs.memes", "cogs.help", "cogs.links", "cogs.misc", "cogs.gamble", "cogs.map_archive", "cogs.exceptions"]
 
     for cog in cogs:
         await bot.load_extension(cog)
