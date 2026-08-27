@@ -13,8 +13,9 @@ def _normalize(text: str) -> str:
     return text.strip().casefold()
 
 
-def _hash(text: str) -> str:
-    return hashlib.sha256(_normalize(text).encode("utf-8")).hexdigest()
+def _hash_message(message: discord.Message) -> str:
+    hash_string = f"{len(message.attachments)};{message.content}"
+    return hashlib.sha256(_normalize(hash_string).encode("utf-8")).hexdigest()
 
 
 @dataclasses.dataclass
@@ -62,10 +63,8 @@ class Moderation(commands.Cog, name="Moderation"):
             return
         if not message.guild:
             return
-        if not message.content or not message.content.strip():
-            return
 
-        message_hash = _hash(message.content)
+        message_hash = _hash_message(message)
 
         now = datetime.now(timezone.utc)
         cutoff = now - timedelta(seconds=30)
@@ -74,9 +73,9 @@ class Moderation(commands.Cog, name="Moderation"):
             record.messages.append(message)
             message_count = len(record.get_channel_ids())
             if record.first_seen >= cutoff and message_count >= 3:
-                # temporary action: alert staff, don't kick user or delete any messages
+                # temporary action: don't kick user or delete any messages
                 # TODO: add kick and message deletion when we're sure that there are no false positives
-                message = f"detected spammer {message.author.mention} in {message_count} channels <@&349427930234880009>"
+                message = f"detected spammer {message.author.mention} in {message_count} channels"
                 await self.bot_log_channel.send(message)
         else:
             self.cache[message.author.id][message_hash] = MessageRecord(message.created_at, [message])
