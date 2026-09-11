@@ -18,3 +18,4 @@ The following environment variables can be configured
 * `ARCHIVE` Discord channel ID (default: `349277718954901514`, the map-archive channel in the guild)
 * `BLACKLIST` List of Discord channel IDs where commands are ignored (default: `[]`)
 * `BOT_LOG` Discord channel ID (default: `1409872078508920872`, the bot-log channel in the guild)
+* `SPAM_ALERTS` Discord channel ID (default: `1219226818100465734`, the spam-alert channel in the guild)

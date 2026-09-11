@@ -65,7 +65,7 @@ class Moderation(commands.Cog, name="Moderation"):
         self.bot = bot
         # cache[user_id][hash]: MessageRecord
         self.cache: dict[int, dict[str, MessageRecord]] = defaultdict(dict)
-        self.bot_log_channel: discord.TextChannel = self.bot.get_channel(config.bot_log_channel_id)
+        self.spam_alerts_channel: discord.TextChannel = self.bot.get_channel(config.spam_alerts_channel_id)
 
     async def cog_load(self) -> None:
         self.filter_cache.start()
