@@ -116,7 +116,7 @@ class Moderation(commands.Cog, name="Moderation"):
 
         # wait to make sure there are no messages still "in transit", that have not been added to record.messages
         # this is probably not necessary, but can't hurt
-        await asyncio.sleep(5)
+        await asyncio.sleep(30)
 
         deleted_count = 0
         for message in record.messages:
@@ -160,7 +160,7 @@ class Moderation(commands.Cog, name="Moderation"):
                            f"kick message sent: {_boolean_emoji(action_result.sent_kick_message)}\n" +
                            f"member kicked: {_boolean_emoji(action_result.kicked_member)}\n" +
                            f"messages deleted: {action_result.deleted_count}/{len(record.messages)}")
-                await self.bot_log_channel.send(message)
+                await self.spam_alerts_channel.send(message)
         else:
             self.cache[message.author.id][message_hash] = MessageRecord(message.created_at, message.author, [message])
 
