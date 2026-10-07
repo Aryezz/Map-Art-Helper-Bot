@@ -52,11 +52,6 @@ class MessageRecord:
     def get_channel_ids(self) -> set[int]:
         return {message.channel.id for message in self.messages}
 
-@dataclasses.dataclass(frozen=True)
-class ActionResult:
-    sent_kick_message: bool
-    kicked_member: bool
-    deleted_count: int
 
 class Moderation(commands.Cog, name="Moderation"):
     """Server moderation tools"""
@@ -87,7 +82,7 @@ class Moderation(commands.Cog, name="Moderation"):
                 self.cache[user_id] = filtered_records
 
     @staticmethod
-    async def _remove_spam(record: MessageRecord) -> ActionResult | None:
+    async def _remove_spam(record: MessageRecord) -> bool | None:
         # prevent action being taken multiple times for the same record
         # since asyncio is single threaded and only switches context on await, this is enough, and no asyncio.Lock or
         # other atomic locking is needed
@@ -105,32 +100,14 @@ class Moderation(commands.Cog, name="Moderation"):
         except discord.HTTPException:
             _logger.error("HTTP exception while sending kick message")
 
-        kicked_member = False
         try:
-            await record.author.kick(reason=f"spam detected")
-            kicked_member = True
-        except discord.Forbidden:
-            _logger.error("No permission to kick member")
-        except discord.HTTPException:
-            _logger.error("HTTP exception while kicking member")
+            seconds_since = datetime.now(timezone.utc) - record.first_seen
+            await record.author.ban(delete_message_seconds=seconds_since.seconds + 10)
+            await record.author.unban()
+        except discord.NotFound:
+            return None
 
-        # wait to make sure there are no messages still "in transit", that have not been added to record.messages
-        # this is probably not necessary, but can't hurt
-        await asyncio.sleep(30)
-
-        deleted_count = 0
-        for message in record.messages:
-            try:
-                await message.delete()
-                deleted_count += 1
-            except discord.Forbidden:
-                _logger.error("No permission to delete message")
-            except discord.NotFound:
-                _logger.error("Message to delete could not be found")
-            except discord.HTTPException:
-                _logger.error("HTTP exception while deleting message")
-
-        return ActionResult(sent_kick_message, kicked_member, deleted_count)
+        return sent_kick_message
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -157,9 +134,7 @@ class Moderation(commands.Cog, name="Moderation"):
                     return
 
                 message = (f"detected spammer {message.author.mention} (@{message.author.name})\n" +
-                           f"kick message sent: {_boolean_emoji(action_result.sent_kick_message)}\n" +
-                           f"member kicked: {_boolean_emoji(action_result.kicked_member)}\n" +
-                           f"messages deleted: {action_result.deleted_count}/{len(record.messages)}")
+                           f"kick message sent: {_boolean_emoji(action_result)}\n")
                 await self.spam_alerts_channel.send(message)
         else:
             self.cache[message.author.id][message_hash] = MessageRecord(message.created_at, message.author, [message])
