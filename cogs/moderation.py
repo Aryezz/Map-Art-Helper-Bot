@@ -1,4 +1,3 @@
-import asyncio
 import dataclasses
 import hashlib
 import logging
@@ -112,13 +111,13 @@ class Moderation(commands.Cog, name="Moderation"):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot:
-            return
+            return  # ignore bot messages
+        if message.guild is None or message.guild.id != config.map_artists_guild_id:
+            return  # ignore direct messages and messages in other servers
         if "staff" in [role.name for role in message.author.roles]:
-            return
+            return  # ignore messages by staff
         if message.content.startswith(self.bot.command_prefix):
-            return
-        if not message.guild or message.guild.id != config.map_artists_guild_id:
-            return
+            return  # ignore bot commands
 
         message_hash = _hash_message(message)
 
