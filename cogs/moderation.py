@@ -101,7 +101,7 @@ class Moderation(commands.Cog, name="Moderation"):
 
         try:
             seconds_since = datetime.now(timezone.utc) - record.first_seen
-            await record.author.ban(delete_message_seconds=seconds_since.seconds + 10)
+            await record.author.ban(delete_message_seconds=seconds_since.seconds + 300)
             await record.author.unban()
         except discord.NotFound:
             return None
